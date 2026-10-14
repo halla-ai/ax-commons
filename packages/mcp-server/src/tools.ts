@@ -73,22 +73,26 @@ function parse<T extends ToolName>(name: T, args: Record<string, unknown>): Tool
   return result.data as ToolArgs<T>;
 }
 
+// Tool results reach the hosted model, so they carry no row ids: an
+// autoincrement id would reveal how many entries this user has recorded.
+const RECORDED = { recorded: true, stored: "on-device ledger only" };
+
 export function createToolHandlers(ledger: Ledger): Record<ToolName, ToolHandler> {
   return {
     declare_intent: (args) => {
       const input = parse("declare_intent", args);
-      const intentId = ledger.declareIntent(input.work_type, input.reason);
-      return { recorded: true, intentId, stored: "on-device ledger only" };
+      ledger.declareIntent(input.work_type, input.reason);
+      return RECORDED;
     },
     log_task: (args) => {
       const input = parse("log_task", args);
-      const taskLogId = ledger.logTask(input.task_type, input.human_reviewed, input.reused, input.minutes);
-      return { recorded: true, taskLogId, stored: "on-device ledger only" };
+      ledger.logTask(input.task_type, input.human_reviewed, input.reused, input.minutes);
+      return RECORDED;
     },
     report_issue: (args) => {
       const input = parse("report_issue", args);
-      const issueReportId = ledger.reportIssue(input.error_type, input.correction_type);
-      return { recorded: true, issueReportId, stored: "on-device ledger only" };
+      ledger.reportIssue(input.error_type, input.correction_type);
+      return RECORDED;
     },
     consent_status: (args) => {
       parse("consent_status", args);

@@ -277,13 +277,24 @@ export function exportLedger(ledgerPath: string, outPath: string): { outPath: st
 
 export function deleteLedger(ledgerPath: string): boolean {
   const resolved = path.resolve(ledgerPath);
+  // A symlinked ledger path (e.g. via AX_COMMONS_LEDGER) stores data in the
+  // target, and SQLite keeps its journals next to the target: delete those too.
+  let target = resolved;
+  try {
+    target = fs.realpathSync(resolved);
+  } catch {
+    // dangling or missing: nothing to follow
+  }
+  const candidates = new Set([resolved, ...["", "-wal", "-shm", "-journal"].map((suffix) => target + suffix)]);
   let removed = false;
-  for (const suffix of ["", "-wal", "-shm", "-journal"]) {
-    const candidate = resolved + suffix;
-    if (fs.existsSync(candidate)) {
-      fs.rmSync(candidate);
-      removed = true;
+  for (const candidate of candidates) {
+    try {
+      fs.lstatSync(candidate);
+    } catch {
+      continue;
     }
+    fs.rmSync(candidate);
+    removed = true;
   }
   return removed;
 }

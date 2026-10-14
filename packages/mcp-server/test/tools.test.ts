@@ -147,9 +147,10 @@ test("MCP protocol: tools/list advertises only the allowlisted fields, and a cal
     });
     assert.equal(result.isError, undefined);
     const text = (result.content as { type: string; text: string }[])[0]?.text ?? "";
-    const parsed = JSON.parse(text) as { recorded: boolean; taskLogId: number };
+    const parsed = JSON.parse(text) as Record<string, unknown>;
     assert.equal(parsed.recorded, true);
-    assert.ok(parsed.taskLogId >= 1);
+    // No row ids: they would reveal the user's entry counts to the hosted model.
+    assert.deepEqual(Object.keys(parsed).sort(), ["recorded", "stored"]);
   } finally {
     await client.close();
     await server.close();

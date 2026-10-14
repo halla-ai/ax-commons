@@ -70,6 +70,20 @@ test("AC3: export refuses to overwrite the ledger, its sidecars, or a link to it
   }
 });
 
+test("AC3: deleteLedger through a symlinked path removes the real ledger", { skip: process.platform === "win32" }, () => {
+  const { ledgerPath, dir, cleanup } = tempLedgerPath();
+  try {
+    new Ledger(ledgerPath).close();
+    const link = path.join(dir, "link.db");
+    fs.symlinkSync(ledgerPath, link);
+    assert.equal(deleteLedger(link), true);
+    assert.ok(!fs.existsSync(ledgerPath), "real ledger must be gone");
+    assert.throws(() => fs.lstatSync(link), "symlink must be gone");
+  } finally {
+    cleanup();
+  }
+});
+
 test("AC3: deleteLedger removes the ledger file and reports whether anything existed", () => {
   const { ledgerPath, cleanup } = tempLedgerPath();
   try {
