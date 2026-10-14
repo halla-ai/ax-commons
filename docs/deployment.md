@@ -6,12 +6,12 @@ Human installation, task logging, contribution exercises and pilot evaluation ar
 
 - Host: the owner-selected existing STAIx Vercel environment, with no additional paid service. No new database or Blob subscription is created.
 - Portable Node Fetch adapter: `packages/receiver/src/vercel.mjs`. Browser assets: `packages/dashboard/public`. The root Node API entry converts the provider request to a Web Request and writes the Web Response.
-- Durable aggregate storage: an operator-provisioned private GitHub repository, through `packages/receiver/src/github-store.mjs`. Repository visibility is checked before every adapter instance's first content operation. Refuse a public repository.
+- Durable aggregate storage: an operator-provisioned private GitHub repository, through `packages/receiver/src/github-store.mjs`. Repository visibility is freshly checked before every content operation. Refuse a public repository.
 - Runtime secrets supply the private repository token and repository name, plus `METRICS_CREDENTIALS`, a JSON map from SHA-256 hashes of random 64-character hexadecimal bearer credentials to approved program pseudonyms. Issue a separate random credential per device. Never derive credentials or pseudonyms from personal data.
 - Private source keys are derived from transport credentials; they never appear in outbound aggregate JSON or public reports.
 - `MONTHLY_REQUEST_LIMIT` is 1,000 authenticated POST attempts per UTC month, enforced through optimistic compare-and-swap in the private repository. A limit rejection prevents further ingestion; at 80%, `x-budget-warning` signals operators. Invalid authenticated submissions consume a slot to bound work.
 - Public fixed-month reads, authenticated revocation and authenticated `GET /v1/budget` remain available after the ingestion limit. Budget status is private. Never log request bodies or credentials.
-- Snapshot replacement retries bounded write conflicts. Released months are create-once files: concurrent release creation returns the stored winning release. Months already past the cutoff cannot receive new uploads.
+- Snapshots and the frozen release share one `months/YYYY-MM.json` record. Bounded SHA compare-and-swap retries coordinate uploads, revocation and publication. Publication recomputes the current snapshots atomically; upload retries recheck the cutoff and release state. Concurrent publication returns the stored winning release, never a stale supplied aggregate.
 
 ## Costs and stop conditions
 

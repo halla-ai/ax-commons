@@ -36,7 +36,7 @@ CREATE TABLE releases (
 
 ## Private GitHub storage adapter
 
-- Logical records use `snapshots/<program>/<private-source>/<month>.json`, `releases/<month>.json`, and `usage/<month>.json` in the verified private repository. Each snapshot is the validated wire fields plus the server-derived source key.
+- Logical records use `months/<month>.json` and `usage/<month>.json` in the verified private repository. A month record contains exactly `{snapshots:[],release:null}` until publication, then an immutable suppressed release object. Each private snapshot contains validated wire fields plus the server-derived source key; the program/source pair is unique within the month.
 - `consents/<random-hex>.json` is a separate restricted namespace for the approved contribution workflow. Generic adapter paths are allowlisted; arbitrary paths and traversal are rejected.
-- GitHub contents SHA supplies optimistic compare-and-swap. Snapshot mutation retries conflicts at most four times; release creation never overwrites an existing file. Truncated tree listings fail closed.
+- GitHub contents SHA supplies optimistic compare-and-swap. Monthly mutation retries conflicts at most four times. Upload retries recheck eligibility and frozen state; release mutation recomputes from the current snapshot array. Once the release field is set, no upload can replace it. Repository visibility is checked afresh before each content operation.
 - Deleting a current snapshot does not purge historical Git commits. Disclose the operator's private history and backup retention; see `docs/deployment.md`.
