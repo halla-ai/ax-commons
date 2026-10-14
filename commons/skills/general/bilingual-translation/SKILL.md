@@ -5,7 +5,7 @@ license: CC-BY-4.0
 metadata:
   purpose: "Give users a translation workflow where key terms stay consistent across documents through an explicit glossary step, for Korean-English program and business documents."
   reference_sources: "ax-commons design spec (docs/specs/2026-10-14-ax-commons-design.md); standard translation workflow practice (terminology extraction before translation)"
-  reviewer: "pending: operator-appointed domain reviewer"
+  reviewer: "Young Joon Lee (interim; operator domain review pending)"
   version: "1.0.0"
   sunset: "scope-limited"
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues/new"

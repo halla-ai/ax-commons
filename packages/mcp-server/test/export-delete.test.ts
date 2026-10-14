@@ -64,8 +64,11 @@ test("AC3: deleteLedger removes the ledger file and reports whether anything exi
     ledger.close();
     assert.ok(fs.existsSync(ledgerPath));
 
+    // A leftover rollback journal (after a crash) holds ledger pages too.
+    fs.writeFileSync(`${ledgerPath}-journal`, "stale pages");
     assert.equal(deleteLedger(ledgerPath), true);
     assert.ok(!fs.existsSync(ledgerPath));
+    assert.ok(!fs.existsSync(`${ledgerPath}-journal`));
     assert.equal(deleteLedger(ledgerPath), false);
   } finally {
     cleanup();

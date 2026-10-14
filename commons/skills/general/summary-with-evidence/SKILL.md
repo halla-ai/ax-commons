@@ -5,7 +5,7 @@ license: CC-BY-4.0
 metadata:
   purpose: "Help non-expert users get a document summary they can check claim by claim against the source, for reports, contracts, notices, and minutes."
   reference_sources: "ax-commons design spec (docs/specs/2026-10-14-ax-commons-design.md); evidence-marking practice from citation-required summarization workflows"
-  reviewer: "pending: operator-appointed domain reviewer"
+  reviewer: "Young Joon Lee (interim; operator domain review pending)"
   version: "1.0.0"
   sunset: "scope-limited"
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues/new"
