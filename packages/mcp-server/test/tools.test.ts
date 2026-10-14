@@ -63,8 +63,10 @@ test("report_issue records valid input for every enum combination", () => {
 });
 
 test("consent_status returns items and empty transmission history", () => {
-  withHandlers((handlers) => {
+  withHandlers((handlers, ledgerPath) => {
     const out = handlers.consent_status({}) as { items: unknown[]; transmissionHistory: unknown[] };
+    // The result reaches the hosted model; the local path embeds the OS account name.
+    assert.ok(!JSON.stringify(out).includes(ledgerPath), "consent_status must not return the ledger path");
     assert.ok(Array.isArray(out.items) && out.items.length >= 2);
     assert.deepEqual(out.transmissionHistory, []);
   });

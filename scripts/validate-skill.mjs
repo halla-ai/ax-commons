@@ -55,6 +55,10 @@ function unquote(value) {
   if (trimmed.length >= 2 && ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'")))) {
     return trimmed.slice(1, -1);
   }
+  // YAML reads these unquoted scalars as booleans, null or numbers, not strings.
+  if (/^(true|false|yes|no|on|off|null|~|[-+]?(\d[\d_]*)?\.?\d+([eE][-+]?\d+)?|0x[0-9a-fA-F]+|\.inf|\.nan)$/i.test(trimmed) || trimmed === "") {
+    return trimmed === "" ? "" : null;
+  }
   return trimmed;
 }
 

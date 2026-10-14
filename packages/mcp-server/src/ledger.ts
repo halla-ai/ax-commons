@@ -85,7 +85,6 @@ export interface ConsentItem {
 export interface ConsentStatus {
   items: ConsentItem[];
   transmissionHistory: { sent_at: string; kind: string; detail: string | null }[];
-  ledgerPath: string;
   note: string;
 }
 
@@ -209,7 +208,6 @@ export class Ledger {
     return {
       items,
       transmissionHistory: transmissions,
-      ledgerPath: this.path,
       note: "Transmission history lists completed sends. Export and delete are under your control; remote withdrawal is separate from local deletion.",
     };
   }

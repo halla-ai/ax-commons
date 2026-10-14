@@ -134,6 +134,19 @@ test("AC4: a negated no-server fallback fails", () => {
   }
 });
 
+test("AC4: unquoted YAML non-string scalars fail", () => {
+  for (const scalar of ["true", "null", "123"]) {
+    const broken = VALID_FRONTMATTER.replace('reviewer: "pending: operator-appointed domain reviewer"', `reviewer: ${scalar}`);
+    const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);
+    try {
+      const errors = validateSkillFile(file);
+      assert.ok(errors.some((e) => e.includes("reviewer")), `expected a reviewer error for ${scalar}, got: ${errors.join("; ")}`);
+    } finally {
+      cleanup();
+    }
+  }
+});
+
 test("AC4: an unsupported language in the list fails", () => {
   const broken = VALID_FRONTMATTER.replace('languages: "ko,en"', 'languages: "ko,en,fr"');
   const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);
