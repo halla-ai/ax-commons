@@ -85,6 +85,7 @@ export interface ConsentStatus {
 export class Ledger {
   readonly path: string;
   private db!: DatabaseSync;
+  private ino = 0;
 
   constructor(dbPath: string) {
     this.path = path.resolve(dbPath);
@@ -92,18 +93,29 @@ export class Ledger {
   }
 
   private open(): void {
-    fs.mkdirSync(path.dirname(this.path), { recursive: true });
+    // User-only permissions: the ledger is personal. SQLite gives its journal
+    // files the same mode as the database file.
+    fs.mkdirSync(path.dirname(this.path), { recursive: true, mode: 0o700 });
     this.db = new DatabaseSync(this.path);
+    fs.chmodSync(this.path, 0o600);
+    this.ino = fs.statSync(this.path).ino;
     // Two clients (e.g. Claude Desktop and another app) may run the server at once;
     // wait for the other writer instead of failing a log with SQLITE_BUSY.
     this.db.exec("PRAGMA busy_timeout = 5000");
     this.migrate();
   }
 
-  // The user may delete the ledger file while the server runs. Reopen a fresh
-  // one instead of writing into the deleted file or failing as read-only.
+  // The user may delete the ledger file while the server runs, and another
+  // server may already have recreated it. Reopen whenever the path no longer
+  // names the file we hold, instead of writing into the deleted file.
   private live(): DatabaseSync {
-    if (!fs.existsSync(this.path)) {
+    let ino: number | undefined;
+    try {
+      ino = fs.statSync(this.path).ino;
+    } catch {
+      ino = undefined;
+    }
+    if (ino !== this.ino) {
       this.db.close();
       this.open();
     }
@@ -213,7 +225,7 @@ export class Ledger {
       counts[table] = rows.length;
     }
     fs.mkdirSync(path.dirname(resolved), { recursive: true });
-    fs.writeFileSync(resolved, JSON.stringify(data, null, 2) + "\n", "utf8");
+    fs.writeFileSync(resolved, JSON.stringify(data, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });
     return { outPath: resolved, counts };
   }
 
@@ -266,7 +278,7 @@ export function exportLedger(ledgerPath: string, outPath: string): { outPath: st
 export function deleteLedger(ledgerPath: string): boolean {
   const resolved = path.resolve(ledgerPath);
   let removed = false;
-  for (const suffix of ["", "-wal", "-shm"]) {
+  for (const suffix of ["", "-wal", "-shm", "-journal"]) {
     const candidate = resolved + suffix;
     if (fs.existsSync(candidate)) {
       fs.rmSync(candidate);

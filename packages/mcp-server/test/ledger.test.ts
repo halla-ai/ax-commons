@@ -111,3 +111,31 @@ test("concurrent first opens of a fresh ledger all succeed (no migration race)",
     cleanup();
   }
 });
+
+test("ledger directory and file are user-only", { skip: process.platform === "win32" }, () => {
+  const { dir, cleanup } = tempLedgerPath();
+  try {
+    const ledgerPath = `${dir}/nested/ledger.db`;
+    new Ledger(ledgerPath).close();
+    assert.equal(fs.statSync(`${dir}/nested`).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(ledgerPath).mode & 0o777, 0o600);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a server still holding a deleted ledger reopens after another server recreated it", () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  const a = new Ledger(ledgerPath);
+  const b = new Ledger(ledgerPath);
+  try {
+    fs.rmSync(ledgerPath);
+    a.logTask("writing", true, true);
+    b.logTask("coding", false, false);
+    assert.deepEqual(readAllRows(ledgerPath).task_logs.map((r) => r.task_type), ["writing", "coding"]);
+  } finally {
+    a.close();
+    b.close();
+    cleanup();
+  }
+});

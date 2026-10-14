@@ -109,8 +109,11 @@ export function validateSkillFile(filePath, schema = loadSchema()) {
 
   // The last heading-delimited section must carry the log_task step.
   const sections = typeof body === "string" ? body.split(/^#{1,6} /m) : [];
-  if (!(sections.at(-1) ?? "").includes("log_task")) {
+  const lastSection = sections.at(-1) ?? "";
+  if (!lastSection.includes("log_task")) {
     errors.push("body must end with a log_task step for when the ax-commons MCP server is available");
+  } else if (!/without (the |an? )?(ax-commons )?(MCP |local )?(server|MCP)|서버[가 ]*없/i.test(lastSection)) {
+    errors.push("the final log_task section must state that the skill works without the MCP server");
   }
   return errors;
 }

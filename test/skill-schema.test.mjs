@@ -37,7 +37,7 @@ metadata:
   languages: "ko,en"
 ---`;
 
-const VALID_BODY = "Do the task. If the ax-commons MCP server is available, call log_task at the end.";
+const VALID_BODY = "Do the task. If the ax-commons MCP server is available, call log_task at the end; the skill works without the server.";
 
 test("AC4: both general skills pass schema validation", () => {
   for (const skill of SKILLS) {
@@ -108,6 +108,16 @@ test("AC4: log_task mentioned only before the last section fails", () => {
   try {
     const errors = validateSkillFile(file);
     assert.ok(errors.some((e) => e.includes("log_task")), `expected a log_task error, got: ${errors.join("; ")}`);
+  } finally {
+    cleanup();
+  }
+});
+
+test("AC4: a final log_task section without the no-server fallback fails", () => {
+  const { file, cleanup } = writeFixture("fixture-skill", VALID_FRONTMATTER, "## Logging\nCall log_task.");
+  try {
+    const errors = validateSkillFile(file);
+    assert.ok(errors.some((e) => e.includes("without the MCP server")), `expected a fallback error, got: ${errors.join("; ")}`);
   } finally {
     cleanup();
   }
