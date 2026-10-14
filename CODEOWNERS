@@ -1,0 +1,7 @@
+# Interim domain reviewer; operator review remains required before adoption.
+/commons/ @entelecheia
+/packages/ @entelecheia
+/web/ @entelecheia
+/docs/ @entelecheia
+/.github/ @entelecheia
+/CODEOWNERS @entelecheia

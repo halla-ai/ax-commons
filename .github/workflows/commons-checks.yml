@@ -1,0 +1,34 @@
+name: Contribution safety
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  contribution-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+      - name: Consent and unsafe fixture regression tests
+        run: node --test --test-concurrency=2 packages/contributions/*.test.mjs
+      - name: Schema and safety of changed contribution files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            git ls-files -z commons/skills commons/prompts commons/cases commons/issues > /tmp/ax-contribution-files
+          else
+            git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" HEAD -- commons/skills commons/prompts commons/cases commons/issues > /tmp/ax-contribution-files
+          fi
+          while IFS= read -r -d '' file; do
+            node packages/contributions/check.mjs "$file"
+          done < /tmp/ax-contribution-files
+      - name: Skill metadata schema
+        run: node scripts/validate-skill.mjs

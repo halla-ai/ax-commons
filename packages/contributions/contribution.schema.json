@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "User-selected AX Commons contribution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "slug", "purpose", "sources", "reviewer", "version", "sunset", "issuePath", "content", "contributor"],
+  "properties": {
+    "type": {"enum": ["prompt", "skill", "case-success", "case-failure", "issue"]},
+    "slug": {"type": "string", "maxLength": 80, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "purpose": {"type": "string", "minLength": 1},
+    "sources": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "reviewer": {"type": "string", "minLength": 1},
+    "version": {"type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$"},
+    "sunset": {"enum": ["full", "scope-limited", "purpose-limited"]},
+    "issuePath": {"type": "string", "pattern": "^https://"},
+    "content": {"type": "string", "minLength": 1},
+    "contributor": {"type": "string", "maxLength": 80, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"}
+  }
+}
