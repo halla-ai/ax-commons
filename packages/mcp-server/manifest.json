@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "ax-commons",
   "display_name": "AX Commons",
-  "version": "0.1.0",
-  "description": "Local ledger for the ax-commons contribution loop: declare one intent, log AI tasks, report issues, and review consent. Everything stays on your device; nothing is transmitted.",
-  "long_description": "AX Commons is an open contribution loop for public AI-adoption programs. This extension runs entirely on your device. It records your declared intent, task tags (type, human review, reuse), issue reports, and consent items in a single local SQLite ledger. Conversation text is never collected: every tool accepts only fixed categories, yes/no flags and an optional number of minutes, so there is no field text could be copied into. This version transmits nothing; the ledger can be exported to a readable JSON file or deleted at any time. Minimal aggregate measurement is part of the program terms and starts only with a later version; sharing contributions is a separate opt-in.",
+  "version": "0.2.0",
+  "description": "Local AI activity records, approved contributions and monthly aggregate sharing with small cells suppressed.",
+  "long_description": "대화 내용은 수집하거나 원장에 저장하지 않습니다. 작업 유형·사람 검토·재사용·선택한 스킬의 횟수만 기록하며, 5건 미만 셀은 전송하지 않습니다. 집계 전송은 운영자 설정과 명시적 승인 후에만 이루어집니다. 기여 공유는 별도 선택 사항이며, 정확한 내용 미리보기·공개 범위·90일 이내 만료·승인을 거쳐 제출합니다. 공유를 거절해도 지원에 영향이 없습니다. 철회는 현재 자료의 삭제 절차이며, 이미 배포된 공개 사본과 Git 이력은 회수할 수 없습니다. Configuration never sends data automatically. Monthly aggregate measurements are program terms; contributions require separate exact-content public approval and expiry. Local export omits withdrawal credentials. Local deletion does not withdraw remote contributions; use revoke first.",
   "author": {
     "name": "Cheju Halla University ax-commons contributors",
     "url": "https://github.com/halla-ai/ax-commons"
@@ -21,21 +21,94 @@
     "entry_point": "dist/server.mjs",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/dist/server.mjs"]
+      "args": [
+        "${__dirname}/dist/server.mjs"
+      ],
+      "env": {
+        "AX_COMMONS_ENDPOINT": "${user_config.endpoint}",
+        "AX_COMMONS_PROGRAM_ID": "${user_config.program_id}",
+        "AX_COMMONS_METRICS_TOKEN": "${user_config.metrics_token}",
+        "AX_COMMONS_CONTRIBUTION_TOKEN": "${user_config.contribution_token}"
+      }
     }
   },
   "tools": [
-    { "name": "declare_intent", "description": "Record the one piece of work the user wants to change with AI, and why, as two fixed categories." },
-    { "name": "log_task", "description": "Record a completed AI task: type tag, human review, reuse, optional minutes." },
-    { "name": "report_issue", "description": "Record a wrong or unhelpful AI result: error type and correction type." },
-    { "name": "consent_status", "description": "Show consent items, their scope and period, and the transmission history." }
+    {
+      "name": "declare_intent",
+      "description": "Record the one piece of work the user wants to change with AI, and why, as two fixed categories."
+    },
+    {
+      "name": "log_task",
+      "description": "Record a completed AI task: type tag, human review, reuse, optional minutes."
+    },
+    {
+      "name": "report_issue",
+      "description": "Record a wrong or unhelpful AI result: error type and correction type."
+    },
+    {
+      "name": "consent_status",
+      "description": "Show consent items, their scope and period, and the transmission history."
+    },
+    {
+      "name": "submit_contribution",
+      "description": "Preview selected content, approve public scope and expiry, then submit."
+    },
+    {
+      "name": "sync_metrics",
+      "description": "Explicitly approve one monthly count snapshot; cells below five are suppressed."
+    },
+    {
+      "name": "revoke",
+      "description": "Disable synchronization or request approved contribution withdrawal."
+    }
   ],
-  "keywords": ["ai-adoption", "measurement", "privacy", "contribution"],
+  "keywords": [
+    "ai-adoption",
+    "measurement",
+    "privacy",
+    "contribution"
+  ],
   "license": "MIT",
   "compatibility": {
-    "platforms": ["darwin", "win32", "linux"],
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
     "runtimes": {
       "node": ">=22.13.0"
+    }
+  },
+  "user_config": {
+    "endpoint": {
+      "type": "string",
+      "title": "운영 서비스 / Operator service",
+      "description": "운영자가 안내한 HTTPS 주소. 설정만으로 전송하지 않습니다. / Configuration never sends data automatically.",
+      "default": "https://ax-commons.halla.ai",
+      "required": false
+    },
+    "program_id": {
+      "type": "string",
+      "title": "사업 코드 / Program pseudonym",
+      "description": "운영자가 발급한 가명 코드. 이름이나 이메일을 입력하지 마세요.",
+      "default": "",
+      "required": false
+    },
+    "metrics_token": {
+      "type": "string",
+      "title": "집계 접근 코드 / Measurement code",
+      "description": "운영자가 발급한 기기별 접근 코드. 명시적 승인 후에만 집계를 전송합니다.",
+      "default": "",
+      "sensitive": true,
+      "required": false
+    },
+    "contribution_token": {
+      "type": "string",
+      "title": "기여 참여 코드 / Contribution code",
+      "description": "선택적 기여 제출용 코드. 공유를 거절해도 지원에 영향이 없습니다.",
+      "default": "",
+      "sensitive": true,
+      "required": false
     }
   }
 }

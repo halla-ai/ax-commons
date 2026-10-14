@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Ledger } from "./ledger.ts";
-import { CORRECTION_TYPES, ERROR_TYPES, INTENT_REASONS, MAX_MINUTES, TASK_TYPES } from "./ledger.ts";
+import { CORRECTION_TYPES, ERROR_TYPES, INTENT_REASONS, SKILL_IDS, MAX_MINUTES, TASK_TYPES } from "./ledger.ts";
 
 // Every tool input is a fixed enum member, a boolean or a bounded integer.
 // There is intentionally no string field a client could copy conversation
@@ -19,7 +19,7 @@ export const toolInputSchemas = {
   declare_intent: z
     .object({
       work_type: fixedEnum(TASK_TYPES, "work_type").describe("Category of the one piece of work to change with AI"),
-      reason: fixedEnum(INTENT_REASONS, "reason").describe("Why this work should change"),
+      reason: fixedEnum(INTENT_REASONS, SKILL_IDS, "reason").describe("Why this work should change"),
     })
     .strict(),
   log_task: z
@@ -27,6 +27,7 @@ export const toolInputSchemas = {
       task_type: fixedEnum(TASK_TYPES, "task_type").describe("Fixed task category tag"),
       human_reviewed: z.boolean().describe("A human checked the AI output before use"),
       reused: z.boolean().describe("The output was reused (in whole or adapted)"),
+      skill_id: fixedEnum(SKILL_IDS, "skill_id").optional().describe("Approved skill pack used, if any"),
       minutes: z.number().int().min(0).max(MAX_MINUTES).optional().describe("Optional estimate of minutes spent"),
     })
     .strict(),
@@ -53,7 +54,7 @@ export const toolDescriptions: Record<ToolName, string> = {
     "Failure reports count as contributions. Stored only on this device.",
   consent_status:
     "Show consent items with their scope and period, and the transmission history of this ledger " +
-    "(empty: this version transmits nothing).",
+    "(remote tools require configuration and explicit approval).",
 };
 
 type ToolArgs<T extends ToolName> = z.infer<(typeof toolInputSchemas)[T]>;
@@ -82,7 +83,7 @@ export function createToolHandlers(ledger: Ledger): Record<ToolName, ToolHandler
     },
     log_task: (args) => {
       const input = parse("log_task", args);
-      const taskLogId = ledger.logTask(input.task_type, input.human_reviewed, input.reused, input.minutes);
+      const taskLogId = ledger.logTask(input.task_type, input.human_reviewed, input.reused, input.minutes, input.skill_id);
       return { recorded: true, taskLogId, stored: "on-device ledger only" };
     },
     report_issue: (args) => {

@@ -114,7 +114,7 @@ test("missing required fields are rejected", () => {
 test("tool surface is exactly the four P1 tools with allowlisted fields", () => {
   assert.deepEqual(Object.keys(toolInputSchemas).sort(), ["consent_status", "declare_intent", "log_task", "report_issue"]);
   assert.deepEqual(Object.keys(toolInputSchemas.declare_intent.shape).sort(), ["reason", "work_type"]);
-  assert.deepEqual(Object.keys(toolInputSchemas.log_task.shape).sort(), ["human_reviewed", "minutes", "reused", "task_type"]);
+  assert.deepEqual(Object.keys(toolInputSchemas.log_task.shape).sort(), ["human_reviewed", "minutes", "reused", "skill_id", "task_type"]);
   assert.deepEqual(Object.keys(toolInputSchemas.report_issue.shape).sort(), ["correction_type", "error_type"]);
   assert.deepEqual(Object.keys(toolInputSchemas.consent_status.shape), []);
 });
@@ -128,12 +128,15 @@ test("MCP protocol: tools/list advertises only the allowlisted fields, and a cal
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
   try {
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map((t) => t.name).sort(), ["consent_status", "declare_intent", "log_task", "report_issue"]);
+    assert.deepEqual(tools.map((t) => t.name).sort(), ["consent_status", "declare_intent", "log_task", "report_issue", "revoke", "submit_contribution", "sync_metrics"]);
     const declared: Record<string, string[]> = {
       declare_intent: ["reason", "work_type"],
-      log_task: ["human_reviewed", "minutes", "reused", "task_type"],
+      log_task: ["human_reviewed", "minutes", "reused", "skill_id", "task_type"],
       report_issue: ["correction_type", "error_type"],
       consent_status: [],
+      revoke: ["id", "kind", "period"],
+      submit_contribution: ["action", "approved", "candidate", "expiresAt", "hash", "previewId", "scope"],
+      sync_metrics: ["approved", "period"],
     };
     for (const tool of tools) {
       assert.deepEqual(Object.keys(tool.inputSchema.properties ?? {}).sort(), declared[tool.name as keyof typeof declared]);
@@ -141,19 +144,24 @@ test("MCP protocol: tools/list advertises only the allowlisted fields, and a cal
 
     const result = await client.callTool({
       name: "log_task",
-      arguments: { task_type: "translation", human_reviewed: true, reused: true, minutes: 12 },
+      arguments: { task_type: "translation", human_reviewed: true, reused: true, minutes: 12, skill_id: "general/bilingual-translation" },
     });
     assert.equal(result.isError, undefined);
     const text = (result.content as { type: string; text: string }[])[0]?.text ?? "";
     const parsed = JSON.parse(text) as { recorded: boolean; taskLogId: number };
     assert.equal(parsed.recorded, true);
     assert.ok(parsed.taskLogId >= 1);
+    const blocked = await client.callTool({name:"sync_metrics", arguments:{period:"2026-10", approved:false}});
+    assert.equal(blocked.isError, true);
+    const status = await client.callTool({name:"consent_status", arguments:{}});
+    assert.ok(JSON.stringify(status).includes("remote"));
   } finally {
     await client.close();
     await server.close();
     ledger.close();
     const rows = readAllRows(ledgerPath);
     assert.equal(rows.task_logs.length, 1);
+    assert.equal(rows.task_logs[0]?.skill_id, "general/bilingual-translation");
     cleanup();
   }
 });

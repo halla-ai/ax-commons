@@ -1,6 +1,6 @@
 {
   "name": "ax-commons",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Open contribution loop for public AI-adoption programs",
   "type": "module",
@@ -9,8 +9,10 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "test": "node --test test/*.test.mjs && npm run test --workspaces --if-present",
-    "validate:skills": "node scripts/validate-skill.mjs commons/skills"
+    "test": "node --test --test-concurrency=2 test/*.test.mjs && npm run test --workspaces --if-present",
+    "validate:skills": "node scripts/validate-skill.mjs commons/skills",
+    "build:web": "node scripts/build-web.mjs",
+    "contributors": "node scripts/generate-contributors.mjs"
   },
   "engines": {
     "node": ">=22.18.0"
