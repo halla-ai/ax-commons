@@ -36,12 +36,16 @@ function renderLanguage() {
   document.documentElement.lang = language;
   document.title = text.title;
   for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = text[node.dataset.i18n];
-  for (const node of document.querySelectorAll('[data-label]')) node.setAttribute('aria-label', text[node.dataset.label]);
+  for (const node of document.querySelectorAll('[data-label]')) {
+    node.setAttribute('aria-label', text[node.dataset.label]);
+    if (node.hasAttribute('title')) node.title = text[node.dataset.label];
+  }
   for (const node of document.querySelectorAll('[data-help-link]')) node.href = language === 'en' ? '/help/en.html' : '/help/';
   for (const node of document.querySelectorAll('[data-dashboard-link]')) node.href = '/?lang=' + language;
+  const other = language === 'en' ? 'ko' : 'en';
   for (const node of document.querySelectorAll('[data-language]')) {
-    if (node.dataset.language === language) node.setAttribute('aria-current', 'true');
-    else node.removeAttribute('aria-current');
+    node.dataset.language = other; node.href = '/?lang=' + other; node.lang = other; node.hreflang = other;
+    node.setAttribute('aria-label', text.switchLanguage); node.title = text.switchLanguage;
   }
   renderResults();
 }

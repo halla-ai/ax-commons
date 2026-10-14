@@ -1,4 +1,5 @@
 import {helpContent} from '../web/help/content.mjs';
+import {icons} from '../web/icons.mjs';
 
 export function escapeHtml(value) {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
@@ -11,7 +12,7 @@ function steps(items) { return '<ol>' + items.map(item => '<li>' + escapeHtml(it
 export function themeSwitch(en) {
   const labels = en ? ['Color theme', 'System', 'Light', 'Dark'] : ['화면 모드', '시스템', '라이트', '다크'];
   return '<div class="theme-switch" role="group" aria-label="' + labels[0] + '" hidden>' +
-    ['system', 'light', 'dark'].map((choice, index) => '<button type="button" data-theme-choice="' + choice + '" aria-pressed="' + (choice === 'system') + '">' + labels[index + 1] + '</button>').join('') + '</div>';
+    ['system', 'light', 'dark'].map((choice, index) => '<button type="button" data-theme-choice="' + choice + '" aria-label="' + labels[index + 1] + '" title="' + labels[index + 1] + '" aria-pressed="' + (choice === 'system') + '">' + icons[choice] + '</button>').join('') + '</div>';
 }
 export function renderHelp(language, content = helpContent[language]) {
   if (!['ko', 'en'].includes(language)) throw new Error('Unsupported help language');
@@ -48,10 +49,7 @@ export function renderHelp(language, content = helpContent[language]) {
 <a href="${en ? '/help/en.html' : '/help/'}" aria-current="page">${escapeHtml(content.nav.help)}</a>
 <a href="/contribute/">${escapeHtml(content.nav.contribute)}</a>
 </nav>
-<nav class="language-switch" aria-label="${escapeHtml(content.nav.language)}">
-<a href="/help/" lang="ko" hreflang="ko"${!en ? ' aria-current="true"' : ''}>한국어</a>
-<a href="/help/en.html" lang="en" hreflang="en"${en ? ' aria-current="true"' : ''}>English</a>
-</nav>
+${en ? '<a class="language-switch" href="/help/" lang="ko" hreflang="ko" aria-label="한국어" title="한국어">' : '<a class="language-switch" href="/help/en.html" lang="en" hreflang="en" aria-label="English" title="English">'}${icons.language}</a>
 ${themeSwitch(en)}
 </header>
 <main id="content" class="help-main">
