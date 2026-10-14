@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AX Commons aggregate monthly snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "program_id",
+    "period",
+    "cells",
+    "contribution_count"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "program_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32,64}$"
+    },
+    "period": {
+      "type": "string",
+      "pattern": "^20[0-9]{2}-(0[1-9]|1[0-2])$"
+    },
+    "cells": {
+      "type": "array",
+      "maxItems": 192,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_type",
+          "human_reviewed",
+          "reused",
+          "skill_id",
+          "count"
+        ],
+        "properties": {
+          "task_type": {
+            "enum": [
+              "document-summary",
+              "translation",
+              "writing",
+              "coding",
+              "data",
+              "other"
+            ]
+          },
+          "human_reviewed": {
+            "type": "boolean"
+          },
+          "reused": {
+            "type": "boolean"
+          },
+          "skill_id": {
+            "enum": [
+              null,
+              "general/summary-with-evidence",
+              "general/bilingual-translation",
+              "general/general-documents",
+              "small-business/promotion-and-replies",
+              "career/job-documents",
+              "hospitality/multilingual-replies",
+              "agriculture/work-logs-and-settlements"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 1000000
+          }
+        }
+      }
+    },
+    "contribution_count": {
+      "anyOf": [
+        {
+          "const": 0
+        },
+        {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 1000000
+        }
+      ]
+    }
+  }
+}
