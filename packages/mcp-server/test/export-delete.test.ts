@@ -37,6 +37,20 @@ test("AC3: exportLedger writes a readable JSON file with every table", () => {
   }
 });
 
+test("AC3: an export overwriting an existing file is user-only", { skip: process.platform === "win32" }, () => {
+  const { ledgerPath, dir, cleanup } = tempLedgerPath();
+  try {
+    new Ledger(ledgerPath).close();
+    const outPath = path.join(dir, "existing.json");
+    fs.writeFileSync(outPath, "old", { mode: 0o644 });
+    fs.chmodSync(outPath, 0o644);
+    exportLedger(ledgerPath, outPath);
+    assert.equal(fs.statSync(outPath).mode & 0o777, 0o600);
+  } finally {
+    cleanup();
+  }
+});
+
 test("AC3: export refuses to overwrite the ledger, its sidecars, or a link to it", () => {
   const { ledgerPath, dir, cleanup } = tempLedgerPath();
   try {

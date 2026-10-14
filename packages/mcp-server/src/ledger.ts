@@ -235,6 +235,8 @@ export class Ledger {
     data.bridge_metrics = this.live().prepare("SELECT period, enabled, status FROM bridge_metrics ORDER BY period").all();
     fs.mkdirSync(path.dirname(resolved), { recursive: true });
     fs.writeFileSync(resolved, JSON.stringify(data, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });
+    // mode applies only when the file is created; tighten an overwritten one too.
+    fs.chmodSync(resolved, 0o600);
     return { outPath: resolved, counts };
   }
 

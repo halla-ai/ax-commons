@@ -41,7 +41,7 @@ The ledger is one file on your computer:
 - Windows: `%APPDATA%\ax-commons\ledger.db`
 - Linux: `~/.local/share/ax-commons/ledger.db`
 
-**To delete everything**, quit Claude Desktop first, then delete that file (on macOS: in Finder, choose Go > Go to Folder and paste the path; delete `ledger.db`). That is the whole delete operation; nothing is stored elsewhere. Removing the extension from Claude Desktop stops further logging but does not delete the ledger.
+**To delete everything**, quit Claude Desktop first, then delete the whole `ax-commons` folder that contains `ledger.db` (on macOS: in Finder, choose Go > Go to Folder, paste `~/Library/Application Support/`, and move the `ax-commons` folder to the Trash, then empty the Trash). Deleting the folder also removes any temporary files the database may have left next to `ledger.db`. That is the whole delete operation; nothing is stored elsewhere. Removing the extension from Claude Desktop stops further logging but does not delete the ledger.
 
 **To export a readable copy** (JSON, opens in any text editor), you need Node.js 22.13 or newer installed on your computer (download from https://nodejs.org). Claude Desktop's built-in runtime cannot be used from Terminal.
 
