@@ -107,9 +107,9 @@ test('revocation waits for an active metrics upload, then deletes and prevents r
   await new Promise(resolve=>setImmediate(resolve));
   assert.deepEqual(sequence,['POST']);
   release();
-  assert.equal((await upload).status,'submitted');assert.equal((await revoke).status,'withdrawn');
+  assert.equal((await upload).status,'withdrawal-pending');assert.equal((await revoke).status,'withdrawn');
   assert.deepEqual(sequence,['POST','DELETE']);
-  assert.equal(api.consentStatus().metrics[0].enabled,false);
+  assert.deepEqual(api.consentStatus().metrics[0],{period:'2026-10',enabled:false,status:'withdrawn'});
 });
 test('malformed and oversize receipts remain generic and never persist server-controlled metadata',async t=>{
   for (const data of [{id:'wrong',revokeToken,status:'submitted'}, {id,revokeToken:'wrong',status:'submitted'}, {id,status:'submitted',url:'https://evil.example/secret'}, {padding:'x'.repeat(9000)}]) {

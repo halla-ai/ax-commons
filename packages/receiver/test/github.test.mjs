@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {GithubStore} from '../src/github-store.mjs';
+import {GithubStore, MAX_MONTH_BYTES, MAX_MONTH_SOURCES} from '../src/github-store.mjs';
 import {createVercelReceiver} from '../src/vercel.mjs';
-import {createReceiver} from '../src/core.mjs';
+import {createReceiver, TASK_TYPES, SKILL_IDS, MonthCapacityError} from '../src/core.mjs';
 function github(privateRepo = true) {
   const files = new Map(); let sequence = 0, forceConflict = false, pauseWrite = null, customTree = null;
   const response = (value, status = 200) => new Response(JSON.stringify(value), {status});
@@ -151,4 +151,38 @@ test('invalid budget limits fail before any storage operation', async () => {
     await assert.rejects(store.budget('2026-10', limit));
   }
   assert.equal(reads, 0);
+});
+
+test('monthly admission reserves publication and withdrawal capacity below Contents bound', async () => {
+  const service = github(); let date = new Date('2026-10-20T00:00:00Z');
+  const store = new GithubStore({token: 'test-only', repo: 'test/state', fetch: service.fetch, now: () => date});
+  const cells = TASK_TYPES.flatMap(task_type => [false, true].flatMap(human_reviewed => [false, true].flatMap(reused => [null, ...SKILL_IDS].map(skill_id => ({task_type, human_reviewed, reused, skill_id, count: 999999})))));
+  const admitted = []; let rejected;
+  for (let index = 1; index <= 100; index++) {
+    const value = {...snapshot, source_id: index.toString(16).padStart(64, '0'), cells};
+    try { await store.upsert(value); admitted.push(value); }
+    catch (error) { assert.ok(error instanceof MonthCapacityError); rejected = value; break; }
+  }
+  assert.ok(admitted.length > 0 && rejected);
+  assert.equal((await store.listSnapshots('2026-10')).length, admitted.length);
+  date = new Date('2026-11-08T00:00:00Z');
+  const released = await store.putRelease('2026-10');
+  const storedBytes = () => Buffer.from(service.files.get('months/2026-10.json').content, 'base64').byteLength;
+  assert.ok(storedBytes() <= MAX_MONTH_BYTES);
+  for (const value of admitted) { await store.revoke(value); assert.ok(storedBytes() <= MAX_MONTH_BYTES); }
+  await store.revoke(rejected);
+  assert.deepEqual(await store.listSnapshots('2026-10'), []);
+  assert.deepEqual(await store.getRelease('2026-10'), released);
+});
+test('full source quota preserves revocation and rejects new sources permanently', async () => {
+  const service = github(), store = new GithubStore({token: 'test-only', repo: 'test/state', fetch: service.fetch, now: () => new Date('2026-10-20T00:00:00Z')});
+  const tombstones = Array.from({length: MAX_MONTH_SOURCES - 1}, (_, index) => ({program_id: program, source_id: index.toString(16).padStart(64, '0')}));
+  await store.putJson('months/2026-10.json', {snapshots: [], release: null, revoked_sources: tombstones}, {createOnly: true});
+  await store.upsert(snapshot);
+  const unknown = {...snapshot, source_id: 'f'.repeat(64)};
+  await assert.rejects(store.upsert(unknown), MonthCapacityError);
+  await store.revoke(snapshot); await store.revoke(snapshot); await store.revoke(unknown);
+  assert.equal((await store.readMonth('2026-10')).state.revoked_sources.length, MAX_MONTH_SOURCES);
+  assert.deepEqual(await store.listSnapshots('2026-10'), []);
+  await assert.rejects(store.upsert(unknown), MonthCapacityError);
 });

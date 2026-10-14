@@ -1,5 +1,8 @@
-import {validateSnapshot, suppressSnapshots, uploadEligible, releaseEligible, PeriodClosedError} from './core.mjs';
+import {validateSnapshot, suppressSnapshots, uploadEligible, releaseEligible, PeriodClosedError, MonthCapacityError} from './core.mjs';
 const SAFE_PATH = /^(?:months\/20[0-9]{2}-(?:0[1-9]|1[0-2])|usage\/20[0-9]{2}-(?:0[1-9]|1[0-2])|consents\/[a-f0-9]{32,64})\.json$/;
+export const MAX_MONTH_BYTES = 512 * 1024;
+export const MAX_MONTH_SOURCES = 1000;
+const TOMBSTONE_RESERVE_BYTES = Buffer.byteLength(JSON.stringify({program_id: 'f'.repeat(64), source_id: 'f'.repeat(64)})) + 1;
 export class StorageConflict extends Error {}
 export class GithubStore {
   constructor({token, repo, fetch: request = globalThis.fetch, now = () => new Date()}) {
@@ -102,11 +105,21 @@ export class GithubStore {
     }
     return {state, sha: row?.sha ?? null};
   }
+  sourceKeys(state) {
+    return new Set([...state.snapshots, ...state.revoked_sources].map(source => `${source.program_id}/${source.source_id}`));
+  }
+  admissionFits(state, period) {
+    const projected = {...state, release: state.release ?? suppressSnapshots(state.snapshots, period)};
+    // Reserve every remaining source slot, including never-uploaded sources.
+    const reserve = (MAX_MONTH_SOURCES - state.revoked_sources.length) * TOMBSTONE_RESERVE_BYTES;
+    return this.sourceKeys(state).size <= MAX_MONTH_SOURCES && Buffer.byteLength(JSON.stringify(projected)) + reserve <= MAX_MONTH_BYTES;
+  }
   async mutateMonth(period, mutate) {
     for (let attempt = 0; attempt < 4; attempt++) {
       const {state, sha} = await this.readMonth(period);
       const change = mutate(state);
       if (!change.write) return change.result;
+      if (Buffer.byteLength(JSON.stringify(state)) > MAX_MONTH_BYTES) throw new MonthCapacityError();
       try { await this.putJson(`months/${period}.json`, state, {expectedSha: sha}); return change.result; }
       catch (error) { if (!(error instanceof StorageConflict)) throw error; }
     }
@@ -118,11 +131,18 @@ export class GithubStore {
     return this.mutateMonth(value.period, state => {
       if (!uploadEligible(value.period, this.now()) || state.release !== null || state.revoked_sources.some(source => source.program_id === value.program_id && source.source_id === source_id)) throw new PeriodClosedError();
       state.snapshots = state.snapshots.filter(entry => entry.program_id !== value.program_id || entry.source_id !== source_id);
-      state.snapshots.push(value); return {write: true};
+      state.snapshots.push(value);
+      if (!this.admissionFits(state, value.period)) throw new MonthCapacityError();
+      return {write: true};
     });
   }
   async revoke(value) {
     return this.mutateMonth(value.period, state => {
+      const keys = this.sourceKeys(state);
+      const sourceKey = `${value.program_id}/${value.source_id}`;
+      // A never-admitted source at a permanently full source quota cannot
+      // upload later, so no additional tombstone is needed to withdraw it.
+      if (!keys.has(sourceKey) && keys.size >= MAX_MONTH_SOURCES) return {write: false};
       if (!state.revoked_sources.some(source => source.program_id === value.program_id && source.source_id === value.source_id)) {
         state.revoked_sources.push({program_id: value.program_id, source_id: value.source_id});
       } else return {write: false};

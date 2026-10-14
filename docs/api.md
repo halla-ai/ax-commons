@@ -24,6 +24,8 @@
 - A snapshot replaces the same program/authenticated-source/month, including removal of previously uploaded cells. Retrying never increases counts.
 - Send complete locally suppressed monthly snapshots, not incremental batches. Cells with counts below 5 must be absent; contribution count is 0 or at least 5. An empty cells array is permitted.
 - UTC current month is accepted. Previous month is accepted until the following month day 7 inclusive. Older months are closed; future months are rejected.
+- Monthly admission additionally limits private state to 512 KiB, including the projected frozen release and reserved space for up to 1,000 private withdrawal tombstones. Active and withdrawn program/source pairs share a permanent 1,000-source monthly quota. Oversized uploads return `409 {"error":"month_capacity_reached"}` without changing the stored snapshot. These conservative limits keep GitHub Contents reads and admitted-source revocation available below its size boundary.
+- At a full source quota, withdrawal of a never-admitted source succeeds without adding a tombstone: that source has no stored snapshot and cannot later gain admission because withdrawn slots are retained. Existing sources always retain withdrawal capacity.
 - Success: `200 {"accepted":true}`. Authentication: 401; program mismatch: 403; invalid payload: 400; closed period: 409; body too large: 413; unsupported media: 415. Store failures return generic 503.
 
 ## Revocation

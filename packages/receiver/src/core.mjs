@@ -5,6 +5,7 @@ const ID = /^[a-f0-9]{32,64}$/;
 const PERIOD = /^20[0-9]{2}-(0[1-9]|1[0-2])$/;
 export class InvalidPayload extends Error {}
 export class PeriodClosedError extends Error {}
+export class MonthCapacityError extends Error {}
 const reject = () => { throw new InvalidPayload('Invalid aggregate payload'); };
 function exact(value, keys) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).sort().join(',') !== keys.sort().join(',')) reject();
@@ -99,6 +100,7 @@ export function createReceiver({store, authenticate, now = () => new Date()}) {
       await store.upsert({...value, source_id: identity.source_id});
       return response({accepted: true});
     } catch (error) {
+      if (error instanceof MonthCapacityError) return response({error: 'month_capacity_reached'}, 409);
       if (error instanceof PeriodClosedError) return response({error: 'period_closed'}, 409);
       return response({error: error instanceof InvalidPayload ? 'invalid_payload' : 'service_unavailable'}, error instanceof InvalidPayload ? 400 : 503);
     }
