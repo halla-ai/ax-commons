@@ -113,12 +113,17 @@ export class Ledger {
   }
 
   private migrate(): void {
-    const row = this.db.prepare("PRAGMA user_version").get() as { user_version: number };
-    let version = row.user_version;
-    while (version < MIGRATIONS.length) {
-      // One transaction per step, so a failed migration leaves no half-built schema.
-      this.db.exec("BEGIN");
+    // One transaction per step, so a failed migration leaves no half-built schema.
+    // BEGIN IMMEDIATE takes the write lock before reading user_version, so two
+    // servers starting on a fresh ledger cannot both run the same step.
+    for (;;) {
+      this.db.exec("BEGIN IMMEDIATE");
       try {
+        const { user_version: version } = this.db.prepare("PRAGMA user_version").get() as { user_version: number };
+        if (version >= MIGRATIONS.length) {
+          this.db.exec("COMMIT");
+          return;
+        }
         for (const statement of MIGRATIONS[version] ?? []) {
           this.db.exec(statement);
         }
@@ -128,7 +133,6 @@ export class Ledger {
         this.db.exec("ROLLBACK");
         throw error;
       }
-      version += 1;
     }
   }
 

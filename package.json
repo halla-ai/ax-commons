@@ -11,5 +11,8 @@
     "build": "npm run build --workspaces --if-present",
     "test": "node --test test/*.test.mjs && npm run test --workspaces --if-present",
     "validate:skills": "node scripts/validate-skill.mjs commons/skills"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   }
 }
