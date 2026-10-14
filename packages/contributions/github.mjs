@@ -16,7 +16,7 @@ export function createGithubTransport({owner = 'halla-ai',repo = 'ax-commons',to
     return btoa(Array.from(bytes,byte => String.fromCharCode(byte)).join(''));
   }
   function assertRecord(record) {
-    if (!/^[a-f0-9-]{36}$/.test(record.id) || !/^commons\/(?:prompts|skills|cases\/(?:success|failure)|issues)\/[a-z0-9]+(?:-[a-z0-9]+)*\.json$/.test(record.path)) throw new Error('invalid contribution receipt');
+    if (!/^[a-f0-9-]{36}$/.test(record.id) || !/^commons\/(?:(?:prompts|cases\/(?:success|failure)|issues)\/[a-z0-9]+(?:-[a-z0-9]+)*\.json|skills\/community\/[a-z0-9]+(?:-[a-z0-9]+)*\/SKILL\.md)$/.test(record.path)) throw new Error('invalid contribution receipt');
     if (record.branch && record.branch !== `contribution/${record.id}`) throw new Error('invalid contribution branch');
     if (record.pr && (!Number.isSafeInteger(record.pr) || record.pr < 1)) throw new Error('invalid PR');
   }
@@ -66,7 +66,11 @@ export function createGithubTransport({owner = 'halla-ai',repo = 'ax-commons',to
       if (!existingRemoval) {
         const head = await request('/git/ref/heads/main');
         await request('/git/refs',{method:'POST',body:{ref:`refs/heads/${removalBranch}`,sha:head.object.sha}});
-        await request(`/contents/${record.path}`,{method:'DELETE',body:{message:'Withdraw contribution from current content',sha:file.sha,branch:removalBranch}});
+      }
+      const pendingFile = await request(`/contents/${record.path}?ref=${removalBranch}`,{missing:true});
+      if (pendingFile) {
+        if (pendingFile.sha !== record.fileSha) return {status:'withdrawal-pending',reason:'withdrawal-content-changed'};
+        await request(`/contents/${record.path}`,{method:'DELETE',body:{message:'Withdraw contribution from current content',sha:pendingFile.sha,branch:removalBranch}});
       }
       const prs = await request(`/pulls?head=${owner}:${removalBranch}&state=open`);
       const pr = prs[0] ?? await request('/pulls',{method:'POST',body:{title:`Withdraw contribution ${record.id}`,head:removalBranch,base:'main',body:'Remove current content following consent withdrawal or expiry. Immutable Git history and existing licensed copies are not erased.'}});
