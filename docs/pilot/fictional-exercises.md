@@ -36,5 +36,5 @@ All facts below are invented for practice. They are not offers, regulations, app
 
 - Fact card: a fictional meeting note says a team considered a stock checklist and asked for a draft by the next meeting. The next meeting date, approver and rollout decision are unspecified.
 - 사실 카드: 가상 회의 메모에는 재고 체크리스트를 검토하고 다음 회의까지 초안을 요청했다고 적혀 있습니다. 다음 회의 날짜·승인자·시행 결정은 없습니다.
-- Task: produce a Korean action note and English counterpart, preserving the difference between a proposal and a decision. Use `date pending` and `approver pending`; do not state rollout approval.
-- 과제: 제안과 결정의 차이를 유지한 한국어 조치 메모와 영어 대응문을 작성합니다. 날짜·승인자는 미정으로 표시하며 시행 승인을 주장하지 않습니다.
+- Task: structure a Korean action note with evidence and unknowns marked, preserving the difference between a proposal and a decision. Use `date pending` and `approver pending`; do not state rollout approval. For an English counterpart, use the dedicated `bilingual-translation` skill when installed. Without that skill, complete the Korean structure and disclose that the translation step is unavailable.
+- 과제: 제공 근거·미확인을 표시하고 제안과 결정의 차이를 유지한 한국어 조치 메모를 구조화합니다. 날짜·승인자는 미정으로 표시하며 시행 승인을 주장하지 않습니다. 영어 대응문은 전용 `bilingual-translation` 스킬이 설치돼 있으면 사용합니다. 없으면 한국어 구조화를 완성하고 번역 단계 미제공을 알립니다.
