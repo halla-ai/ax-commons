@@ -1,6 +1,6 @@
 # Review rules
 
-Every pull request to ax-commons goes through automated CI (planned, lands in P2) and human review. This document defines the passes, who reviews, and what blocks a merge. Until the P2 automation exists, reviewers apply the same checks manually.
+Review every pull request through the configured workflows in `.github/workflows/` and the four passes below. Inspect content beyond the patterns enforced by automation.
 
 ## Review passes
 
@@ -13,18 +13,18 @@ Each PR is reviewed in four passes. A reviewer may combine passes on a small cha
 
 ## Reviewer assignment
 
-Domain reviewers will be assigned through CODEOWNERS (planned, lands in P2 with the commons repository CI): each content area (`commons/`, `packages/`, `web/`, `docs/`) has an owning reviewer or team, and a PR touching multiple areas needs an approval from each affected owner. Until CODEOWNERS exists, a maintainer assigns reviewers per PR following the same rule.
+Use the root [CODEOWNERS](CODEOWNERS) for interim reviewer assignment. A PR touching multiple areas needs review for each affected area. Before adoption, the operator appoints domain reviewers for the content used.
 
 ## Blocking conditions
 
 A PR must not merge while any of the following is present:
 
-- **PII**: phone numbers, email addresses, national ID numbers, card numbers, or any other personal data (planned CI will block the known patterns; reviewers catch the rest, and catch all of it until the CI exists).
+- **PII**: phone numbers, email addresses, national ID numbers, card numbers, or any other personal data (Contribution safety checks known patterns in changed contributions; reviewers inspect the remaining context).
 - **Secrets**: API keys, tokens, passwords, private keys.
 - **Prompt-injection or remote-execution instructions**: text designed to make an AI agent ignore its instructions, exfiltrate data, or fetch and run remote code without the user's explicit action.
-- **Schema failures**: a SKILL.md, manifest, or metrics payload that fails its schema check (schema validation is planned CI for P2; until then reviewers check conformance by hand).
+- **Schema failures**: a SKILL.md, manifest, or metrics payload that fails its schema check (the configured workflows validate contribution, skill and metrics contracts).
 
-Once the blocking CI checks exist they cannot be overridden by reviewers; fix the content instead.
+Do not override failed blocking checks; fix the content instead.
 
 ## After review
 

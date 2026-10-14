@@ -13,15 +13,15 @@ This package supports technical handover. It does not establish successful parti
 
 ## Release inventory
 
-Planned release: `0.2.0`. Intended production endpoint: `https://ax-commons.halla.ai`. Production deployment and live version readback are pending; this address is not evidence that the release is live. Automated full CI and final independent review are also pending on the final integrated commit.
+Verified release snapshot at the 2026-10-15 audit: `0.2.1`, source `bc95f371845256203ce7f5e2d24593f6b8fe42c1`, at `https://ax-commons.halla.ai`. Fresh source-version reads on 2026-10-15 matched the release. See the [evidence summary](evidence-summary.md) for immutable CI, release and review links and remaining workflow verification limits.
 
 Before deployment or handover, record the exact release tag and commit, artifact hashes, installed package version, hosting account, endpoint and responsible operator in the operator's own deployment record. Keep credentials outside the repository. A deployed endpoint alone does not prove the full workflow works.
 
 | Component | Handover dependency |
 | --- | --- |
 | Local MCP server and desktop extension | Source implemented; [installation guide](../install.md), ledger tests and desktop package; human five-minute installation remains NOT MEASURED |
-| Approved contribution flow and commons checks | Source implemented; [contribution boundary](../../packages/contributions/README.md), [hosted protocol](../../packages/hosted/README.md), [MCP bridge](../../packages/mcp-bridge/README.md); final release CI pending |
-| Aggregation receiver and dashboard | Source implemented; [API](../api.md), [schema](../schema.md), [deployment](../deployment.md); production deployment/readback pending |
+| Approved contribution flow and commons checks | Source implemented; [contribution boundary](../../packages/contributions/README.md), [hosted protocol](../../packages/hosted/README.md), [MCP bridge](../../packages/mcp-bridge/README.md); release CI passed; observed participant approval remains unverified |
+| Aggregation receiver and dashboard | Source implemented; [API](../api.md), [schema](../schema.md), [deployment](../deployment.md); production source-version readback confirmed; participant metrics and durable-state exercises remain unverified |
 | Five domain skill packs and pilot materials | Available in [commons skills](../../commons/skills/) and [pilot guide](../pilot/facilitator-guide.md); domain approval and participant testing remain pending |
 
 Use the linked implementation documents for endpoint paths, authentication, configuration and local export/delete commands. Reconcile their wording against the final release before distributing participant instructions. Source documentation alone does not prove deployment or participant use.

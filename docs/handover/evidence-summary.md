@@ -1,25 +1,25 @@
 # Handover evidence summary
 
-Planned release: `0.2.0`. Intended endpoint: `https://ax-commons.halla.ai`. Production deployment/live version readback and final automated full CI remain pending. The owner directed implementation/deployment first and real-user testing afterward. No participant or outside-reader test is claimed here.
+Verified release snapshot (2026-10-15 audit): [v0.2.1](https://github.com/halla-ai/ax-commons/releases/tag/v0.2.1), commit `bc95f371845256203ce7f5e2d24593f6b8fe42c1`. On 2026-10-15, fresh reads of `https://ax-commons.halla.ai/health` and `/release.json` returned this commit; release metadata also reported version `0.2.1`. [Full release checks](https://github.com/halla-ai/ax-commons/actions/runs/38592300731) and [release/deployment](https://github.com/halla-ai/ax-commons/actions/runs/38592372547) succeeded at that commit. The owner directed implementation/deployment first and real-user testing afterward. No participant or outside-reader test is claimed here.
 
-The links below identify current integration source and test contracts. They do not certify the final release commit: attach its immutable check results and deployment record after review. A build or mocked test does not establish user installation time, adoption, service legality or observed participant privacy behavior.
+The links below identify implementation and automated test contracts included in that release. The release checks certify automated validation at the linked commit; live version reads establish the served source identity only. A build or mocked test does not establish user installation time, adoption, service legality or observed participant privacy behavior.
 
 ## Source and implementation evidence
 
 | Claim | Source or automated test contract | Evidence limit |
 | --- | --- | --- |
-| Local logging uses fixed categories; ledger/export/delete controls exist | [Tools](../../packages/mcp-server/src/tools.ts), [privacy tests](../../packages/mcp-server/test/privacy.test.ts), [export/delete tests](../../packages/mcp-server/test/export-delete.test.ts), [installation](../install.md) | Implemented source; final full CI pending; five-minute participant installation NOT MEASURED |
+| Local logging uses fixed categories; ledger/export/delete controls exist | [Tools](../../packages/mcp-server/src/tools.ts), [privacy tests](../../packages/mcp-server/test/privacy.test.ts), [export/delete tests](../../packages/mcp-server/test/export-delete.test.ts), [installation](../install.md) | Release CI passed; five-minute participant installation NOT MEASURED |
 | Exact preview, public approval, bounded expiry and known safety gates exist | [Contribution core](../../packages/contributions/core.mjs), [boundary](../../packages/contributions/README.md), [core tests](../../packages/contributions/core.test.mjs), [safety fixtures](../../packages/contributions/check.test.mjs) | Source/test contracts; scanners do not prove arbitrary content safe |
-| Hosted submissions use client-preallocated UUID/key, safe metadata, exact-term replay and withdrawal tombstones | [Hosted protocol](../../packages/hosted/README.md), [service](../../packages/hosted/service.mjs), [mocked tests](../../packages/hosted/test/service.test.mjs) | Focused mocked checks support the design; final integrated CI and production behavior pending |
+| Hosted submissions use client-preallocated UUID/key, safe metadata, exact-term replay and withdrawal tombstones | [Hosted protocol](../../packages/hosted/README.md), [service](../../packages/hosted/service.mjs), [mocked tests](../../packages/hosted/test/service.test.mjs) | Release CI passed with mocked protocol checks; production publication/withdrawal behavior remains untested |
 | Local receipts retain withdrawal control before HTTP and preserve uncertain state | [MCP bridge](../../packages/mcp-bridge/README.md), [bridge tests](../../packages/mcp-bridge/test/bridge.test.mjs), [web model tests](../../web/contribute/model.test.mjs) | Source/test contracts; real app/browser outcomes NOT MEASURED |
 | Remote withdrawal requires actual removal readback; merged public content needs a removal PR | [Repository adapter](../../packages/contributions/github.mjs), [adapter tests](../../packages/contributions/github.test.mjs), [withdrawal procedure](mirroring-withdrawal.md) | Existing copies and ordinary Git history are not recalled |
 | Aggregate wire has no device/source ID; source identity is authorization-derived privately | [API](../api.md), [schema](../schema.md), [receiver tests](../../packages/receiver/test/core.test.mjs) | Protocol/source evidence; no claim of participant anonymity |
-| Private withdrawal tombstones reject late metric uploads; monthly public reports are suppressed and frozen | [Private store](../../packages/receiver/src/github-store.mjs), [store tests](../../packages/receiver/test/github.test.mjs), [API](../api.md) | Source/test contracts; final CI and deployed persistence readback pending |
-| Deployment uses private Git state and shared monthly app quota, with controls available after the stop | [Deployment](../deployment.md), [host wrapper](../../api/service.js), [API wrapper tests](../../test/hosted-api.test.mjs) | Planned existing-account deployment; no new paid DB/add-ons; app quota is not a platform monetary guarantee |
+| Private withdrawal tombstones reject late metric uploads; monthly public reports are suppressed and frozen | [Private store](../../packages/receiver/src/github-store.mjs), [store tests](../../packages/receiver/test/github.test.mjs), [API](../api.md) | Release CI passed; fresh production persistence mutation/readback was not performed in this audit |
+| Deployment uses private Git state and shared monthly app quota, with controls available after the stop | [Deployment](../deployment.md), [host wrapper](../../api/service.js), [API wrapper tests](../../test/hosted-api.test.mjs) | Released to the existing-account environment; no new paid DB/add-ons; app quota is not a platform monetary guarantee |
 | Sharing is optional and withdrawal/license limits are stated | [Contribution rules](../../CONTRIBUTING.md), [privacy checklist](privacy-review.md) | Policy/review material; no legal compliance conclusion |
 | Five domain packs and pilot materials exist | [Commons skills](../../commons/skills/), [facilitator guide](../pilot/facilitator-guide.md), [fictional exercises](../pilot/fictional-exercises.md) | Preparation material; operator domain approval remains pending |
 
-Provider billing-monitor source is being added. Its final check/configuration and live operation are pending. Vercel Pro overage cannot be ruled out by the application's 1,000-attempt monthly ceiling or 80% warning; public/static/rejected traffic and provider operations remain separate cost exposure. See the [deployment limits](../deployment.md).
+The [provider billing monitor](../../scripts/hosting-budget.mjs) is implemented. Its [scheduled run](https://github.com/halla-ai/ax-commons/actions/runs/38620787257) succeeded at the release commit. A successful monitor run does not prove a future pause or guarantee timely billing data. Vercel Pro overage cannot be ruled out by the application's 1,000-attempt monthly ceiling or 80% warning; public/static/rejected traffic and provider operations remain separate cost exposure. See the [deployment limits](../deployment.md).
 
 ## Human pilot and acceptance outcomes
 
@@ -38,10 +38,10 @@ Issue #7 AC2 is addressed by linking factual implementation claims to source/tes
 
 ## Final release record
 
-- Exact approved release tag, commit and artifact hashes: pending final integration/review.
-- Immutable full CI and independent review results at that head: pending.
-- Production version, endpoint and provider deployment readback: pending.
-- Private durable state, quota and configured expiry/billing monitor readback: pending.
+- Tag and source: [v0.2.1](https://github.com/halla-ai/ax-commons/releases/tag/v0.2.1), `bc95f371845256203ce7f5e2d24593f6b8fe42c1`; [SHA256SUMS](https://github.com/halla-ai/ax-commons/releases/download/v0.2.1/SHA256SUMS) accompanies the CLI, npm tarball and desktop extension.
+- Immutable automated checks: [Full release checks](https://github.com/halla-ai/ax-commons/actions/runs/38592300731). Implementation review and merge records: [PR #16](https://github.com/halla-ai/ax-commons/pull/16), [PR #17](https://github.com/halla-ai/ax-commons/pull/17).
+- Production source identity: fresh `/health` and `/release.json` reads on 2026-10-15 matched the release commit and version; [deployment workflow](https://github.com/halla-ai/ax-commons/actions/runs/38592372547) succeeded. These reads do not exercise submission, withdrawal or storage.
+- Scheduled billing monitor: [successful run](https://github.com/halla-ai/ax-commons/actions/runs/38620787257). Private storage visibility, retention, credentials and expiry configuration require operator verification before real participant collection; this audit made no private-state mutation.
 - Human pilot/outside-reader questions and answered document revisions: NOT MEASURED.
 
 ## Post-deployment reporting

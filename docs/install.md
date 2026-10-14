@@ -4,7 +4,7 @@ Version 0.2 adds optional contribution sharing and approved aggregate synchroniz
 
 ## Claude Desktop extension
 
-- Download `ax-commons.mcpb` from the [release](https://github.com/halla-ai/ax-commons/releases/tag/v0.2.0).
+- Download `ax-commons.mcpb` from the [release](https://github.com/halla-ai/ax-commons/releases/latest).
 - Use Claude Desktop's extension installation flow to open the file. The extension requires Node >=22.13; development and source tests require Node >=22.18.
 - Read the extension description and optional configuration notice. Activity records contain fixed categories, human-review and reuse flags, an optional time estimate, and an approved skill ID. Conversation text is never captured by the logger.
 - Leave the optional access codes empty for local-only use. To share, use the operator-supplied service URL, program pseudonym and separate measurement/contribution codes. Never enter a name or email as the program code.

@@ -4,7 +4,7 @@ This is a technical review checklist for an operator and data-protection officer
 
 ## Data-flow review
 
-The following maps the [approved design](../specs/2026-10-14-ax-commons-design.md) to current integration source. See the [API](../api.md), [schema](../schema.md), [hosted protocol](../../packages/hosted/README.md) and [MCP bridge](../../packages/mcp-bridge/README.md). Final release CI and production readback remain pending; attach immutable check evidence before concluding that a deployed control is effective.
+The following maps the [approved design](../specs/2026-10-14-ax-commons-design.md) to current integration source. See the [API](../api.md), [schema](../schema.md), [hosted protocol](../../packages/hosted/README.md) and [MCP bridge](../../packages/mcp-bridge/README.md). Release CI and production source identity are recorded in the [evidence summary](evidence-summary.md). These do not establish actual participant approval, operational retention or deployed control effectiveness.
 
 | Flow | Allowed material | Review question |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ The project's boundary is that conversation text is neither stored by its loggin
 - Hosting configuration disables body logging; credentials are scoped and stored outside source control; backups have documented access and retention.
 - Withdrawal tests or operator records distinguish local revocation from verified remote removal. Every controlled mirror/cache is tracked separately.
 
-Current source/test paths are linked in the [evidence summary](evidence-summary.md); exact final release CI and production readback remain pending. This checklist states what to review and does not claim deployed control effectiveness.
+Current source/test paths, immutable release checks and production source-version reads are linked in the [evidence summary](evidence-summary.md). This checklist states what to review and does not claim deployed control effectiveness.
 
 - The contribution client preallocates and saves UUID/withdrawal credentials before HTTP; the hosted service stores only safe metadata and a credential hash. Same-ID/key/approved-term retries return persisted state. Participation-authorized withdrawal tombstones prevent late publication.
 - Private authorization-derived source keys coordinate monthly metric withdrawal; durable tombstones reject late uploads from another process. Public monthly aggregates omit cells below five and are immutable after freezing. Suppression is not participant anonymity or a legal compliance finding.

@@ -24,7 +24,7 @@ Apply [measurement definitions and suppression](measurement-plan.md) before fill
 | First local log within 300 seconds / 300초 이내 첫 로컬 기록 | not measured | not measured | not measured | pending non-developer observation |
 | MCP logging / MCP 기록 | not measured | not measured | not measured | pending local confirmation |
 | Standalone completion / 독립 실행 완료 | not measured | not measured | not measured | pending manual aggregate tally |
-| Approved contribution / 승인된 기여물 | not measured | not measured | not measured | functioning P2 and receipt verification pending |
+| Approved contribution / 승인된 기여물 | not measured | not measured | not measured | participant submission and receipt observation pending |
 
 - Allowed result labels: `measured`, `suppressed`, `unknown`, `not measured`, `not applicable`. A suppressed cell is not zero. Report visible sample sizes only when the suppression checks allow them.
 - 결과 표시는 `측정됨`, `비공개`, `미확인`, `미측정`, `해당 없음`으로 구분합니다. 비공개 셀은 0건이 아닙니다. 표본 수도 비공개 검사를 통과한 범위만 보고합니다.
