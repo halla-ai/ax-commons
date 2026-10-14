@@ -152,7 +152,7 @@ test("AC4: an unterminated quoted value fails", () => {
   const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);
   try {
     const errors = validateSkillFile(file);
-    assert.ok(errors.some((e) => e.includes("purpose")), `expected a purpose error, got: ${errors.join("; ")}`);
+    assert.ok(errors.some((e) => e.includes("invalid YAML")), `expected an invalid YAML error, got: ${errors.join("; ")}`);
   } finally {
     cleanup();
   }

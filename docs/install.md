@@ -1,64 +1,47 @@
-# Install guide (non-developers)
+# Install and use AX Commons
 
-This guide installs the AX Commons extension in Claude Desktop. It takes about five minutes. No programming knowledge is needed.
+Version 0.2 adds optional contribution sharing and approved aggregate synchronization. Activity logging stays on your device. Configuring access codes never sends data automatically. Actual native installation and the five-minute installation target have not been measured; the owner will test after deployment.
 
-## What you are installing
+## Claude Desktop extension
 
-The AX Commons extension is a small program that runs only on your computer. It keeps a local log (a single file called the ledger) of:
+- Download `ax-commons.mcpb` from the [release](https://github.com/halla-ai/ax-commons/releases/tag/v0.2.0).
+- Use Claude Desktop's extension installation flow to open the file. The extension requires Node >=22.13; development and source tests require Node >=22.18.
+- Read the extension description and optional configuration notice. Activity records contain fixed categories, human-review and reuse flags, an optional time estimate, and an approved skill ID. Conversation text is never captured by the logger.
+- Leave the optional access codes empty for local-only use. To share, use the operator-supplied service URL, program pseudonym and separate measurement/contribution codes. Never enter a name or email as the program code.
+- Run `consent_status` to inspect local records, configured routes, scoped contributions, expiry and transmission history. Native screen presentation remains unverified until the owner's post-deployment check.
 
-- the one kind of work you want to change with AI and why (your intent, chosen from fixed categories),
-- task records: the type of task, whether a person checked the result, whether you reused it, and optionally how long it took,
-- problem reports: what went wrong and how you corrected it,
-- your consent items.
+## Start with a task
 
-**Your conversations are not recorded.** Every record holds only fixed categories, yes/no answers and an optional number of minutes; there is no place for text. This version sends nothing anywhere.
+- Choose a [skill pack](../commons/skills/). Follow its Korean or English instructions and review the result before use.
+- `declare_intent` accepts a fixed work category and reason category, rather than a free-text description.
+- End the task with `log_task`: task category, whether a person checked it, whether it was reused, optional minutes and optional approved `skill_id`.
+- Use `report_issue` for a fixed failure category and correction category. It does not store the conversation or a narrative of the failure.
 
-## Step 1: install the extension in Claude Desktop
+## Optional sharing
 
-1. Download `ax-commons.mcpb` from the latest release at https://github.com/halla-ai/ax-commons/releases/latest (or use the copy your program operator gave you).
-2. Open Claude Desktop.
-3. Either drag the `.mcpb` file onto the Claude Desktop window, or go to **Settings > Extensions**, choose **Install from file**, and pick the `.mcpb` file.
-4. Confirm the install dialog. Done. No other software is needed: Claude Desktop runs the extension with its own built-in Node.js runtime.
+- `submit_contribution` with `action: preview` accepts only the material you explicitly selected to contribute. It shows the exact public content and its hash; the draft remains in local memory for at most 15 minutes.
+- After reviewing it, use `action: submit` with the preview ID, matching hash, `approved: true`, public scope and an expiry within 90 days. Reviewers-only scope is unavailable and is rejected.
+- The client saves a random receipt ID and withdrawal credential locally before sending. If a response is lost, the result stays `publication-uncertain`; use `action: status` with that ID to reconcile. Do not blindly create another preview and submit again.
+- Submissions create a review PR. `submitted` means received for review, not approved or merged. Sharing is optional and declining it has no effect on support.
+- `sync_metrics` requires an approved calendar month and `approved: true`. It sends only program-keyed aggregate counts; cells below five are absent. Current/previous-month acceptance and immutable public releases are described in [the API](api.md).
+- Run `revoke` for a contribution ID or metrics period. Metrics revocation permanently disables that source's period and blocks delayed uploads. Contribution removal remains pending until actual repository readback confirms it. Existing public copies and Git history cannot be recalled.
 
-## Step 2: what you are agreeing to
+## Without local MCP
 
-The extension keeps two consent items on your device. Its description, shown when you install it, states the terms below; to see the items themselves at any time, ask Claude "show my ax-commons consent status". They mean:
+- Use the packs as plain instructions in your AI app. Omit the logging call when the server is unavailable.
+- Follow the [support matrix](support-matrix.md) for app-specific capabilities. Do not infer local stdio support from a remote-connector feature.
+- Use the [web contribution form](https://ax-commons.halla.ai/contribute/) with an operator-issued participation code. Its preview stays in the browser until a separate approval click.
+- Download the submission record when offered. It contains the withdrawal credential; keep it private. The browser does not save it in local storage. Restore that record to check status or request withdrawal after a lost response.
 
-- **Aggregate measurement (program terms)**: counting tasks by type, review, and reuse is part of the program you joined. In this version the counts stay on your device; a later version sends only counts, never text, and only after the program tells you. Every send is listed in the extension's transmission history.
-- **Contribution sharing (separate opt-in, not yet active)**: sharing a prompt, skill, or case with the commons is your choice, item by item, with a preview, a scope, and a time limit. It arrives in a later version. Saying no changes nothing about the support you receive.
+## Export or delete local data
 
-The same request also shows the transmission history, which is empty in this version.
+- Download the standalone `ax-commons-cli.mjs` release asset, or install the released npm tarball. Run `node ax-commons-cli.mjs path` to locate the local ledger.
+- Export with `node ax-commons-cli.mjs export --out ./ledger-export.json`. Choose a destination different from the ledger and its SQLite sidecars. The export includes sanitized consent metadata and excludes withdrawal credentials.
+- Revoke remote sharing first when needed, then delete with `node ax-commons-cli.mjs delete --confirm`. Local deletion does not withdraw remote contributions or erase private storage history, exported files or backups.
+- Deleting the whole application data folder also removes SQLite sidecars. Removing an extension by itself does not delete local data.
+- Deleting local withdrawal credentials before remote withdrawal can remove your ability to authenticate a later request. Keep the private submission record if you still need that control.
 
-## Step 3: use it
+## Operator references
 
-Ask Claude to do a task, for example a summary. When it is done, say: "Log this task in ax-commons." Claude asks permission to use the extension the first time; choose **Allow**. Claude then confirms the task was recorded. If you use one of the AX Commons skills, it asks to log the task at the end by itself. Nothing else changes about how you use the AI.
-
-## Your ledger: where it is, how to export, how to delete
-
-The ledger is one file on your computer:
-
-- macOS: `~/Library/Application Support/ax-commons/ledger.db`
-- Windows: `%APPDATA%\ax-commons\ledger.db`
-- Linux: `~/.local/share/ax-commons/ledger.db`
-
-**To delete everything**, quit Claude Desktop first, then delete the whole `ax-commons` folder that contains `ledger.db` (on macOS: in Finder, choose Go > Go to Folder, paste `~/Library/Application Support/`, and move the `ax-commons` folder to the Trash, then empty the Trash). Deleting the folder also removes any temporary files the database may have left next to `ledger.db`. That is the whole delete operation; nothing is stored elsewhere. Removing the extension from Claude Desktop stops further logging but does not delete the ledger.
-
-**To export a readable copy** (JSON, opens in any text editor), you need Node.js 22.13 or newer installed on your computer (download from https://nodejs.org). Claude Desktop's built-in runtime cannot be used from Terminal.
-
-1. Download `ax-commons-cli.mjs` from the same release page as the extension.
-2. Open Terminal (macOS: Applications > Utilities > Terminal; Windows: PowerShell).
-3. Run, using the folder you downloaded the file to:
-
-```sh
-node ~/Downloads/ax-commons-cli.mjs export --out ~/Desktop/ax-commons-export.json
-```
-
-The same file also deletes the ledger (quit Claude Desktop first): `node ~/Downloads/ax-commons-cli.mjs delete`. An exported file is a separate copy; delete it yourself when you no longer need it.
-
-## If you use ChatGPT instead of Claude
-
-ChatGPT does not load this desktop extension. The AX Commons skills still work: paste the skill text (from `commons/skills/`) into your chat or saved instructions and follow it as plain instructions; the logging step at the end is skipped automatically when the extension is not present. A web form for contributions arrives in a later phase (P2), so ChatGPT users can contribute with the same preview and approval steps.
-
-## Problems
-
-Report problems at https://github.com/halla-ai/ax-commons/issues.
+- [Deployment and quotas](deployment.md), [API](api.md), [schema](schema.md), [handover](handover/operator-guide.md).
+- Installation success, logging/contribution rates, partner approval and outside-reader review remain unmeasured. Build and automated-test evidence is reported separately in the release record.

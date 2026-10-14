@@ -10,3 +10,9 @@ dist/
 coverage/
 
 .worktrees/
+
+web-dist/
+.vercel/
+*.tgz
+.vercel
+.env*

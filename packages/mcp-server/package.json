@@ -1,7 +1,7 @@
 {
   "name": "@ax-commons/mcp-server",
-  "version": "0.1.0",
-  "description": "Local MCP server for the ax-commons contribution loop: on-device ledger, no conversation text, no network transmission",
+  "version": "0.2.0",
+  "description": "On-device activity ledger, explicitly approved contributions and suppressed aggregate synchronization",
   "license": "MIT",
   "type": "module",
   "main": "dist/server.mjs",
@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "build": "tsc --noEmit && node scripts/build.mjs",
-    "test": "node --test test/*.test.ts",
+    "test": "node --test --test-concurrency=2 test/*.test.ts",
     "start": "node dist/server.mjs",
     "pack": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . ax-commons.mcpb"
   },

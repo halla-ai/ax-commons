@@ -1,0 +1,26 @@
+# Hosted contribution service
+
+`createHostedService({store, transport, contributionToken, cronToken, reserveSubmission, now, crypto})` in `service.mjs` returns an async Fetch handler. The operator issues a 64-character lowercase hexadecimal participation bearer token; the cron credential has the same format and must differ. This service does not expose unrestricted public submission.
+
+| Route | Method | Bearer credential | Result |
+| --- | --- | --- | --- |
+| `/v1/contributions` | POST | Participation token | Exact-approved publication, or pending publication with a withdrawal credential |
+| `/v1/contributions/<uuid>` | GET | That contribution's revocation token | Safe metadata and current state |
+| `/v1/contributions/<uuid>` | POST or DELETE | That contribution's revocation token | Request withdrawal; pending until removal readback |
+| `/v1/expire` | GET | Cron token | Reconcile expired, requested, uncertain and orphaned publications; counts only |
+
+Before HTTP submission, the client generates a UUIDv4 contribution `id` and a random 64-character lowercase hexadecimal withdrawal token, and saves both in its local receipt. Submission requires exactly `{id, candidate, hash, approved, scope, expiresAt}` as JSON, with the withdrawal credential in `X-AX-Withdrawal-Token` and the participation credential in `Authorization: Bearer ...`. Use `preparePreview` from the contributions package and show its rendered content and notice before approval. The server validates again before touching storage or transport. Only `public` is supported; expiry must be future and within 90 days. The body has a streamed 64 KiB byte limit and a five-second read deadline.
+
+Optional `reserveSubmission()` runs after all contribution/approval checks and idempotency lookup, before new consent persistence or publication. It returns `{stopped, warning}` from the operator's durable quota. A stopped quota returns HTTP 503 with `budget_limit_reached`, without a consent or receipt; accepted responses add `x-budget-warning: true` near the configured limit. Status, revocation and expiry recovery bypass this quota so control remains available. Invalid or declined submissions do not consume quota. Concurrent first attempts can each reserve quota, but only the atomic create-only winner publishes; subsequent matching retries reserve nothing.
+
+Responses contain safe metadata, including the client-allocated ID and status, with no raw credential. Retrying the same ID with the same withdrawal token, content hash, scope and expiry returns persisted state without publishing again; token mismatches return 403 and changed terms return 409. Keep the locally saved token privately: a lost HTTP response must not lose withdrawal access. The private store retains validated metadata, a content hash, a private publication-owner claim, safe repository receipt fields and the withdrawal token's SHA-256 hash. Content is forwarded only to the contribution transport after exact approval, never retained in consent state. Hosting layers must disable request-body and credential-header logging.
+
+To withdraw a locally allocated ID before its submission reaches the server, send `DELETE /v1/contributions/<id>` with `Authorization: Bearer <withdrawal-token>` and `X-AX-Participation-Token: <participation-token>`. For a previously unknown ID this creates only a withdrawn metadata tombstone. A later POST with the matching withdrawal key returns `withdrawn` without quota or publication. Unknown deletion requests without the participation credential cannot write tombstones; known contributions need only their withdrawal bearer token.
+
+Status `submitted` means the trusted transport returned a complete contribution PR receipt, not that a maintainer merged it. `publication-uncertain` means the network operation may have partially succeeded. `withdrawal-pending` means removal is not yet confirmed. `withdrawn` requires `transport.isRemoved` readback. Merged public content can require a maintainer to merge a removal PR; withdrawal does not recall licensed copies or ordinary Git history.
+
+Store adapters provide `getJson(path) -> {value, sha} | null`, `putJson(path, value, {createOnly, expectedSha})` and `listConsents() -> metadata[]`. Consent paths are `consents/<uuid-without-hyphens>.json`. Updates retry compare-and-swap conflicts at most four times. The transport provides `publish`, `revoke` and `isRemoved`, using deterministic contribution branches for uncertain publication recovery.
+
+Cron gives rows marked `publishing` a two-minute lease from their persisted `submitted_at` time, then conservatively withdraws them as potentially orphaned. The hosting function's maximum duration must remain below that lease. During the lease, expiry or explicit revocation sets a durable request flag; the publisher re-reads it and performs withdrawal before reporting success. `publication-uncertain` is reconciled immediately. Keep pending records until actual remote readback; do not delete them merely because expiry passed.
+
+Run the mocked targeted checks with `npm test --workspace @ax-commons/hosted`; syntax-check with `npm run build --workspace @ax-commons/hosted`. These checks do not establish browser or real-user outcomes, which the owner deferred until deployment.

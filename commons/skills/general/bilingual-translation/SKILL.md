@@ -6,7 +6,7 @@ metadata:
   purpose: "Give users a translation workflow where key terms stay consistent across documents through an explicit glossary step, for Korean-English program and business documents."
   reference_sources: "ax-commons design spec (docs/specs/2026-10-14-ax-commons-design.md); standard translation workflow practice (terminology extraction before translation)"
   reviewer: "Young Joon Lee (interim; operator domain review pending)"
-  version: "1.0.0"
+  version: "1.0.1"
   sunset: "scope-limited"
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues/new"
   languages: "ko,en"
@@ -63,3 +63,6 @@ Keep key terms consistent across Korean-English translations by fixing a glossar
 ### Task logging
 
 When finished, and only if the ax-commons MCP server is available, call `log_task` with `task_type` set to `translation`, whether a human reviewed the output (`human_reviewed`), whether the output was reused (`reused`), and an optional time estimate (`minutes`). Skip this step when the server is not present. This skill works as plain instructions without the server.
+
+- `log_task` 스키마에 `skill_id`가 있으면 `general/bilingual-translation`를 전달합니다. 필드가 없으면 생략합니다.
+- When the advertised `log_task` schema includes `skill_id`, pass `general/bilingual-translation`; otherwise omit this field.

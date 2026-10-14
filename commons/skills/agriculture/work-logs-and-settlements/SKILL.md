@@ -7,7 +7,7 @@ metadata:
   purpose: "Farm and fishery operators preparing checked work-log and settlement drafts."
   reference_sources: "docs/pilot/fictional-exercises.md; user-supplied quantities and prices"
   reviewer: "Young Joon Lee (interim; operator domain review pending)"
-  version: "1.0.2"
+  version: "1.0.3"
   sunset: "purpose-limited"
   sunset_rule: "Keep only arithmetic drafting; retire any local form mapping when its operator replaces the form."
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues"
@@ -25,3 +25,6 @@ metadata:
 - 단위·합계가 일치하는 한국어 초안과 영어 대응문을 작성합니다. 제시 전에 산술을 별도로 재계산하고 최종화 전 누락을 알립니다. 지급 지시·공식 정산 제출은 실행하지 않습니다.
 - If `log_task` exists, log only the advertised farm/fishery category and actual review/reuse flags. Do not log quantities, prices, document text or identifiers. Without MCP, finish the draft and state no local MCP log was made.
 - `log_task`가 있으면 공개된 농수산 분류와 실제 검토·재사용 상태만 기록합니다. 수량·가격·문서 본문·식별정보는 기록하지 않습니다. MCP가 없으면 초안을 완성하고 로컬 MCP 기록을 하지 않았다고 알립니다.
+
+- `log_task` 스키마에 `skill_id`가 있으면 `agriculture/work-logs-and-settlements`를 전달합니다. 필드가 없으면 생략합니다.
+- When the advertised `log_task` schema includes `skill_id`, pass `agriculture/work-logs-and-settlements`; otherwise omit this field.

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AX Commons 자료 공유</title><link rel="stylesheet" href="./style.css"></head>
+<body><main>
+<h1>공유할 경험을 남겨주세요</h1>
+<p>재사용할 프롬프트, 작업 방법, 성공·실패 사례를 기여할 수 있습니다. 공유할 자료만 직접 입력하고, 대화 기록이나 개인정보는 넣지 마세요. 공유하지 않아도 프로그램 지원은 동일합니다.</p>
+<form id="form">
+<label for="participation">참여 코드</label><input id="participation" type="password" required autocomplete="off" minlength="64" maxlength="64" pattern="[a-fA-F0-9]{64}" aria-describedby="code-help"><p id="code-help" class="help">운영자가 발급한 코드를 입력하세요. 브라우저에 저장하지 않습니다.</p>
+<label for="type">자료 종류</label><select id="type"><option value="prompt">프롬프트</option><option value="skill">작업 방법 (Skill)</option><option value="case-success">성공 사례</option><option value="case-failure">실패 사례</option><option value="issue">문제 보고</option></select>
+<label for="contributor">기여자 별칭</label><input id="contributor" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" aria-describedby="handle-help"><p id="handle-help" class="help">실명 대신 영문 소문자·숫자·하이픈으로 된 별칭을 사용하세요.</p>
+<label for="slug">자료 이름</label><input id="slug" required maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" aria-describedby="slug-help"><p id="slug-help" class="help">예: customer-reply-guide. 이미 등록된 이름은 사용할 수 없습니다.</p>
+<label for="purpose">목적과 대상</label><input id="purpose" required maxlength="500" placeholder="어떤 작업에, 누가 사용할 수 있나요?">
+<label for="material">공유할 내용</label><textarea id="material" required maxlength="40000" rows="12" aria-describedby="skill-help"></textarea><p id="skill-help" class="help" hidden>Skill은 한국어와 영어 내용을 각각 '## ko', '## en' 제목 아래 작성하세요. 마지막 작업 기록 안내는 자동으로 추가됩니다.</p>
+<label for="sources">참고 자료</label><textarea id="sources" required maxlength="4000" rows="3" placeholder="출처 주소 또는 자료명을 한 줄에 하나씩 입력하세요."></textarea>
+<label for="reviewer">책임 검토자</label><input id="reviewer" required maxlength="200" aria-describedby="reviewer-help"><p id="reviewer-help" class="help">운영자가 지정한 검토자 역할이나 공개 별칭을 입력하세요. 연락처는 넣지 마세요.</p>
+<details><summary>버전과 종료 방식</summary><label for="version">버전</label><input id="version" required value="1.0.0" pattern="[0-9]+[.][0-9]+[.][0-9]+"><label for="sunset">종료 방식</label><select id="sunset"><option value="full">공유 종료 시 현재 자료 제거</option><option value="scope-limited">이후 사용 범위 제한</option><option value="purpose-limited">이후 사용 목적 제한</option></select><p class="help">선택과 관계없이 공유 기간이 끝나면 현재 공개 자료의 제거 요청을 진행합니다.</p></details>
+<button type="submit">공개될 내용 미리보기</button>
+</form>
+<section id="preview" hidden aria-labelledby="preview-title"><h2 id="preview-title">이 내용이 공개됩니다</h2><pre id="content"></pre><p id="hash" class="help"></p><p id="notice">공개 범위는 전체 공개입니다. CC BY 4.0으로 공유한 기존 사본의 이용 허락과 Git 이력은 철회할 수 없습니다. 철회는 프로젝트의 현재 자료를 제거하는 절차입니다. 공개하지 않아도 지원은 동일합니다.</p><label for="expiry">공유 만료일</label><input id="expiry" type="datetime-local" required><p class="help">현재부터 90일 이내로 선택하세요. 제거 요청은 검토·처리될 때까지 대기 상태일 수 있습니다.</p><label class="check"><input id="consent" type="checkbox"> 위의 정확한 내용을 전체 공개하고 CC BY 4.0으로 공유하는 데 동의합니다.</label><button id="approve" type="button">동의한 내용 제출</button></section>
+<p id="result" role="status" aria-live="polite"></p>
+<section id="receipt" hidden><h2>제출 기록</h2><p id="receipt-status"></p><p id="receipt-id" class="help"></p><a id="repository-link" hidden target="_blank" rel="noopener noreferrer">GitHub 검토 요청 보기</a><p>제출 응답이 유실되어도 자료 ID와 철회 코드로 상태를 조회할 수 있습니다. 전송 중에도 제출 기록을 저장할 수 있습니다. 제출 기록 파일에는 철회 코드가 포함됩니다. 안전하게 보관하세요. 브라우저를 닫으면 이 페이지의 코드가 지워집니다.</p><button id="download" type="button">제출 기록 파일 저장</button></section>
+<section aria-labelledby="withdrawal-title"><h2 id="withdrawal-title">공유 상태 확인·철회</h2><p class="help">저장한 제출 기록을 불러오거나 자료 ID와 철회 코드를 입력하세요. 서버에 아직 기록이 없는 전송을 철회할 때는 참여 코드도 입력하세요.</p><label for="restore">제출 기록 파일 불러오기</label><input id="restore" type="file" accept=".json,application/json"><label for="record-id">자료 ID</label><input id="record-id" autocomplete="off"><label for="withdrawal-token">철회 코드</label><input id="withdrawal-token" type="password" autocomplete="off"><div class="actions"><button id="refresh" type="button">현재 상태 확인</button><button id="withdraw" type="button">공유 철회 요청</button></div></section>
+</main><script type="module" src="./form.mjs"></script></body></html>

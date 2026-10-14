@@ -1,0 +1,25 @@
+name: Hosting budget guard
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ax-commons-budget-guard
+  cancel-in-progress: false
+jobs:
+  budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/hosting-budget.mjs
+        env:
+          VERCEL_BUDGET_TOKEN: ${{ secrets.VERCEL_BUDGET_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          AX_METRICS_TOKEN: ${{ secrets.AX_METRICS_TOKEN }}
+          AX_BUDGET_GUARD_STOP_AT: ${{ vars.AX_BUDGET_GUARD_STOP_AT }}

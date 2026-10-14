@@ -1,0 +1,37 @@
+name: Full release checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ax-commons-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run validate:skills
+      - name: Build web assets
+        run: AX_RELEASE_SHA=${{ github.sha }} node scripts/build-web.mjs
+      - name: Package desktop extension
+        run: npm run pack --workspace @ax-commons/mcp-server
+      - name: Package npm distribution
+        run: npm pack --workspace @ax-commons/mcp-server
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ax-commons-build-${{ github.sha }}
+          path: |
+            packages/mcp-server/ax-commons.mcpb
+            packages/mcp-server/dist/cli.mjs
+            ax-commons-mcp-server-*.tgz
+            web-dist

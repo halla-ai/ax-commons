@@ -1,0 +1,12 @@
+{
+  "name": "@ax-commons/hosted",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./service.mjs",
+  "scripts": {
+    "build": "node --check service.mjs",
+    "test": "node --test --test-concurrency=2 test/*.test.mjs"
+  },
+  "engines": { "node": ">=22.18.0" }
+}

@@ -7,7 +7,7 @@ metadata:
   purpose: "Staff marking evidence and structuring reviewed general documents from supplied facts."
   reference_sources: "docs/pilot/fictional-exercises.md; user-supplied document facts"
   reviewer: "Young Joon Lee (interim; operator domain review pending)"
-  version: "1.0.2"
+  version: "1.0.3"
   sunset: "scope-limited"
   sunset_rule: "Retire organization-specific format guidance when its approved template changes."
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues"
@@ -25,3 +25,6 @@ metadata:
 - 미해결 항목은 사람이 검토한 뒤 최종본으로 판단합니다. 별도 승인 없이 제출·서명·메일 발송·조치 등록을 실행하지 않습니다.
 - If `log_task` exists, record only the advertised general-document category and actual review/reuse flags. Never include the document, conversation, project names or identifiers. Without MCP, finish the draft and state no local MCP log was made.
 - `log_task`가 있으면 공개된 일반 문서 분류와 실제 검토·재사용 상태만 기록합니다. 문서·대화·프로젝트명·식별정보는 넣지 않습니다. MCP가 없으면 초안을 완성하고 로컬 MCP 기록을 하지 않았다고 알립니다.
+
+- `log_task` 스키마에 `skill_id`가 있으면 `general/general-documents`를 전달합니다. 필드가 없으면 생략합니다.
+- When the advertised `log_task` schema includes `skill_id`, pass `general/general-documents`; otherwise omit this field.

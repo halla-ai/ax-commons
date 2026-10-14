@@ -2,12 +2,14 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 
-export const LEDGER_SCHEMA_VERSION = 1;
+export const LEDGER_SCHEMA_VERSION = 2;
 
 // Structured value domains. These are the only strings the ledger accepts;
 // free-text conversation content has no column to land in.
 export const TASK_TYPES = ["document-summary", "translation", "writing", "coding", "data", "other"] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
+export const SKILL_IDS = ["general/summary-with-evidence", "general/bilingual-translation", "general/general-documents", "small-business/promotion-and-replies", "career/job-documents", "hospitality/multilingual-replies", "agriculture/work-logs-and-settlements"] as const;
+export type SkillId = (typeof SKILL_IDS)[number];
 export const ERROR_TYPES = ["wrong-facts", "unhelpful", "refused", "format", "other"] as const;
 export type ErrorType = (typeof ERROR_TYPES)[number];
 export const CORRECTION_TYPES = ["manual-fix", "retry", "abandoned", "other"] as const;
@@ -23,7 +25,7 @@ export type LedgerTable = (typeof LEDGER_TABLES)[number];
 const PROGRAM_TERMS_ITEM = "aggregate-measurement";
 const PROGRAM_TERMS_DETAIL =
   "Minimal aggregate counts (task type, human-review flag, reuse flag) are part of the program terms. " +
-  "This version transmits nothing; any future transmission is listed in the transmission history.";
+  "Only configured, explicitly approved monthly counts may be sent; small cells below five are suppressed. Contribution sharing is a separate optional approval. Transmission history records completed sends.";
 
 const MIGRATIONS: readonly string[][] = [
   [
@@ -63,6 +65,11 @@ const MIGRATIONS: readonly string[][] = [
       kind TEXT NOT NULL,
       detail TEXT
     )`,
+  ],
+  [
+    `ALTER TABLE task_logs ADD COLUMN skill_id TEXT CHECK (skill_id IS NULL OR skill_id IN (${SKILL_IDS.map((id) => `'${id}'`).join(", ")}))`,
+    `CREATE TABLE IF NOT EXISTS bridge_contributions (id TEXT PRIMARY KEY, hash TEXT NOT NULL, scope TEXT NOT NULL, expires_at TEXT NOT NULL, submitted_at TEXT NOT NULL, status TEXT NOT NULL, revoke_token TEXT, pr_url TEXT)`,
+    `CREATE TABLE IF NOT EXISTS bridge_metrics (period TEXT PRIMARY KEY, enabled INTEGER NOT NULL, status TEXT NOT NULL)`,
   ],
 ];
 
@@ -143,6 +150,9 @@ export class Ledger {
             .prepare("INSERT INTO consent_records (recorded_at, item, kind, granted, scope, period, detail) VALUES (?, ?, ?, ?, ?, ?, ?)")
             .run(new Date().toISOString(), PROGRAM_TERMS_ITEM, "program-terms", 1, "program", null, PROGRAM_TERMS_DETAIL);
         }
+        if (version === 1) {
+          this.db.prepare("UPDATE consent_records SET detail=? WHERE item=? AND kind='program-terms'").run(PROGRAM_TERMS_DETAIL, PROGRAM_TERMS_ITEM);
+        }
         this.db.exec(`PRAGMA user_version = ${version + 1}`);
         this.db.exec("COMMIT");
       } catch (error) {
@@ -159,10 +169,10 @@ export class Ledger {
     return Number(result.lastInsertRowid);
   }
 
-  logTask(taskType: TaskType, humanReviewed: boolean, reused: boolean, minutes?: number): number {
+  logTask(taskType: TaskType, humanReviewed: boolean, reused: boolean, minutes?: number, skillId?: SkillId): number {
     const result = this.live()
-      .prepare("INSERT INTO task_logs (created_at, task_type, human_reviewed, reused, minutes) VALUES (?, ?, ?, ?, ?)")
-      .run(new Date().toISOString(), taskType, humanReviewed ? 1 : 0, reused ? 1 : 0, minutes ?? null);
+      .prepare("INSERT INTO task_logs (created_at, task_type, human_reviewed, reused, minutes, skill_id) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(new Date().toISOString(), taskType, humanReviewed ? 1 : 0, reused ? 1 : 0, minutes ?? null, skillId ?? null);
     return Number(result.lastInsertRowid);
   }
 
@@ -193,7 +203,7 @@ export class Ledger {
       period: null,
       detail:
         "Sharing prompts, skills or cases is a separate opt-in contribution with a chosen scope and period. " +
-        "It is not available in this version and declining it has no effect on program support.",
+        "Nothing is shared before exact-content preview and approval. Declining has no effect on program support.",
     });
     const transmissions = this.db
       .prepare("SELECT sent_at, kind, detail FROM transmissions ORDER BY id")
@@ -201,7 +211,7 @@ export class Ledger {
     return {
       items,
       transmissionHistory: transmissions,
-      note: "Nothing has been transmitted from this ledger. Export and delete are under your control at any time.",
+      note: "Transmission history lists completed sends. Export and delete are under your control; remote withdrawal is separate from local deletion.",
     };
   }
 
@@ -222,6 +232,8 @@ export class Ledger {
       data[table] = rows;
       counts[table] = rows.length;
     }
+    data.bridge_contributions = this.live().prepare("SELECT id, hash, scope, expires_at, submitted_at, status, pr_url FROM bridge_contributions ORDER BY submitted_at").all();
+    data.bridge_metrics = this.live().prepare("SELECT period, enabled, status FROM bridge_metrics ORDER BY period").all();
     fs.mkdirSync(path.dirname(resolved), { recursive: true });
     fs.writeFileSync(resolved, JSON.stringify(data, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });
     // mode applies only when the file is created; tighten an overwritten one too.

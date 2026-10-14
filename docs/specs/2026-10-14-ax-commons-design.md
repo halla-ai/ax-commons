@@ -76,6 +76,11 @@ User device / AI app
 - Accepts period counts by task type, review flag, reuse and contribution count, keyed by a pseudonymous program ID.
 - Publishes a dashboard with small cells suppressed.
 - The prototype runs on low-cost serverless infrastructure with auto-stop; the API and schema are documented for handover to an operator.
+- Uploads are complete monthly snapshots keyed on the wire only by a random program pseudonym. A private source key derived from each device's random authorization credential identifies replacement snapshots per program/source/month, preventing retry inflation. The source key is never in outbound payloads or public reports; credentials are scoped to an approved program and never derived from personal data.
+- Current-month snapshots may be uploaded; the previous UTC month has a grace period through day 7. From day 8 its public release is frozen and immutable. The private monthly state stores snapshots and release in one atomic compare-and-swap record, so upload and publication races cannot report a successful upload omitted by the frozen release. Only one fixed month can be queried, with no overlapping periods, arbitrary date ranges or program-filtered marginal totals.
+- Public reports contain disjoint task/review/reuse/approved-skill cells of at least 5 activities, grouped by program pseudonym. Private source keys, contribution totals and grand totals are omitted. Recognition uses the existing reused cells without adding an overlapping summation view.
+- Aggregate revocation removes the authenticated source's private snapshots and stops future synchronization. Already released anonymous counts remain frozen to prevent before/after deletion differencing. Small-cell suppression concerns activity counts and does not prove participant k-anonymity or measured impact.
+- The application authenticated-upload attempt budget stops ingestion at its configured monthly limit and warns at 80%; authenticated revocation remains available after the stop. This guardrail is not a provider monetary ceiling, so account-level limits and the no-additional-cost hosting constraint must also be verified.
 
 ### 5. Users without MCP support
 
@@ -116,6 +121,8 @@ User device / AI app
 
 ## Decisions
 
+- 2026-10-14: Owner selected the existing STAIx Vercel environment with no additional cost. P3 uses private GitHub structured-state persistence instead of a new paid database; current-file revocation does not erase retained private Git history.
+
 - 2026-10-14: Repository is public under the university organization to keep the tool neutral and reduce conflict-of-interest concerns.
 - 2026-10-14: First pilot is a partner organization's staff AI training, not the voucher program itself.
 - 2026-10-14: Spec only for now; implementation start waits for the owner's go-ahead.
@@ -124,4 +131,5 @@ User device / AI app
 - 2026-10-14: License is CC BY 4.0 for text (skills, prompts, cases, docs) and MIT for code.
 - 2026-10-14: MCP server is TypeScript on the official MCP SDK, shipped as a one-click desktop extension package.
 - 2026-10-14: Minimum cell size for published aggregates is 5.
-- 2026-10-14: P1 states the program terms in the extension description and shows the consent items through `consent_status`, since P1 transmits nothing; a verified install-screen notice is required before P3 enables any transmission.
+- 2026-10-14: P3 implementation uses authenticated monthly replacement snapshots and immutable closed-month releases; per-source identity is derived privately from random transport credentials, so wire payloads contain only program pseudonyms and enumerated aggregate counts.
+- 2026-10-14: P1 states program terms in the extension description and shows consent through `consent_status`. The owner subsequently authorized implementation and deployment before real-user checks. The integration supplies an install-facing notice and optional configuration fields in the manifest; native screen verification and pilot measurements remain deferred until after deployment. Each transmission still requires explicit approval.

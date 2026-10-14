@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Validates commons/skills/**/SKILL.md frontmatter against
-// commons/schemas/skill.schema.json. Dependency-free so P2 CI can reuse it.
+// commons/schemas/skill.schema.json. Install the locked root dependencies first.
 //
 // Usage: node scripts/validate-skill.mjs <path...>
 // Each path is a SKILL.md file or a directory scanned recursively for SKILL.md.
 // Exit code 1 if any file fails.
 
 import fs from "node:fs";
+import { parseDocument } from "yaml";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,51 +18,24 @@ export function loadSchema(schemaPath = SCHEMA_PATH) {
   return JSON.parse(fs.readFileSync(schemaPath, "utf8"));
 }
 
-// Minimal frontmatter parser for the Agent Skills contract: flat top-level
-// `key: value` scalars plus one `metadata:` block of indented string scalars.
-// Lists and nested maps are rejected: metadata is string-to-string.
+// Parse actual YAML, so collection types, duplicate keys and malformed quoting
+// are checked by the same grammar consumers use. Alias expansion is forbidden.
 function parseFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n|$)/);
   if (!match) return { data: null, body: content, error: "missing frontmatter block (--- ... ---)" };
-  const data = {};
-  const lines = match[1].split(/\r?\n/);
-  let inMetadata = false;
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    if (line.trim() === "" || line.trim().startsWith("#")) continue;
-    const indented = /^[ \t]/.test(line);
-    const kv = line.trim().match(/^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/);
-    if (!kv) return { data: null, body: null, error: `frontmatter line ${i + 2} is not a key: value pair` };
-    const [, key, rawValue] = kv;
-    if (!indented) {
-      inMetadata = key === "metadata";
-      if (inMetadata) {
-        if (rawValue !== "") return { data: null, body: null, error: "metadata must be a block of indented string values" };
-        data.metadata = {};
-      } else {
-        data[key] = unquote(rawValue);
-      }
-    } else {
-      if (!inMetadata) return { data: null, body: null, error: `frontmatter line ${i + 2}: only metadata may be indented` };
-      if (rawValue === "") return { data: null, body: null, error: `metadata.${key} must be a string, not a list or map` };
-      data.metadata[key] = unquote(rawValue);
-    }
+  try {
+    const document = parseDocument(match[1], {strict: true, uniqueKeys: true, stringKeys: true, prettyErrors: false});
+    if (document.errors.length || document.warnings.length) throw new Error("invalid YAML");
+    const data = document.toJS({maxAliasCount: 0});
+    if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("invalid object");
+    return { data, body: content.slice(match[0].length), error: null };
+  } catch {
+    return { data: null, body: null, error: "invalid YAML frontmatter" };
   }
-  return { data, body: content.slice(match[0].length), error: null };
 }
 
-function unquote(value) {
-  const trimmed = value.trim();
-  if (trimmed.length >= 2 && ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'")))) {
-    return trimmed.slice(1, -1);
-  }
-  // An opening quote without its closing quote makes the whole file invalid YAML.
-  if (/^["']/.test(trimmed)) return null;
-  // YAML reads these unquoted scalars as booleans, null or numbers, not strings.
-  if (/^(true|false|yes|no|on|off|null|~|[-+]?(\d[\d_]*)?\.?\d+([eE][-+]?\d+)?|0x[0-9a-fA-F]+|\.inf|\.nan)$/i.test(trimmed) || trimmed === "") {
-    return trimmed === "" ? "" : null;
-  }
-  return trimmed;
+export function readSkillFile(file) {
+  return parseFrontmatter(fs.readFileSync(file, "utf8"));
 }
 
 function checkValue(label, value, rules, errors) {
