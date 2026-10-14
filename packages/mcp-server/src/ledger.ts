@@ -188,6 +188,9 @@ export class Ledger {
 
   exportTo(outPath: string): { outPath: string; counts: Record<LedgerTable, number> } {
     const resolved = path.resolve(outPath);
+    if (isLedgerFile(resolved, this.path)) {
+      throw new Error("Export path must not be the ledger file or its journal; choose another file.");
+    }
     const data: Record<string, unknown> = {
       format: "ax-commons-ledger-export",
       schemaVersion: LEDGER_SCHEMA_VERSION,
@@ -208,6 +211,34 @@ export class Ledger {
   close(): void {
     this.db.close();
   }
+}
+
+// Writing the export over the ledger (or its SQLite sidecars) would destroy it.
+// Compare resolved real paths, so symlinks are caught, and inodes, so hard links
+// and case-insensitive file names are caught.
+function isLedgerFile(target: string, ledgerPath: string): boolean {
+  const real = (p: string): string => {
+    try {
+      return fs.realpathSync(p);
+    } catch {
+      try {
+        return path.join(fs.realpathSync(path.dirname(p)), path.basename(p));
+      } catch {
+        return p;
+      }
+    }
+  };
+  const targetReal = real(target);
+  const ledgerReal = real(ledgerPath);
+  const ledgerFiles = ["", "-wal", "-shm", "-journal"].map((suffix) => ledgerReal + suffix);
+  if (ledgerFiles.includes(targetReal)) return true;
+  if (!fs.existsSync(targetReal)) return false;
+  const { dev, ino } = fs.statSync(targetReal);
+  return ledgerFiles.some((file) => {
+    if (!fs.existsSync(file)) return false;
+    const other = fs.statSync(file);
+    return other.dev === dev && other.ino === ino;
+  });
 }
 
 export function exportLedger(ledgerPath: string, outPath: string): { outPath: string; counts: Record<LedgerTable, number> } {

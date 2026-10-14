@@ -37,6 +37,25 @@ test("AC3: exportLedger writes a readable JSON file with every table", () => {
   }
 });
 
+test("AC3: export refuses to overwrite the ledger, its sidecars, or a link to it", () => {
+  const { ledgerPath, dir, cleanup } = tempLedgerPath();
+  try {
+    const ledger = new Ledger(ledgerPath);
+    ledger.logTask("writing", true, true);
+    ledger.close();
+    const symlink = path.join(dir, "link.json");
+    fs.symlinkSync(ledgerPath, symlink);
+    const hardlink = path.join(dir, "hard.json");
+    fs.linkSync(ledgerPath, hardlink);
+    for (const target of [ledgerPath, `${ledgerPath}-wal`, `${ledgerPath}-journal`, symlink, hardlink]) {
+      assert.throws(() => exportLedger(ledgerPath, target), /must not be the ledger/);
+    }
+    assert.equal(readAllRows(ledgerPath).task_logs.length, 1);
+  } finally {
+    cleanup();
+  }
+});
+
 test("AC3: deleteLedger removes the ledger file and reports whether anything existed", () => {
   const { ledgerPath, cleanup } = tempLedgerPath();
   try {
