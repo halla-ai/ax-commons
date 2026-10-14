@@ -59,7 +59,7 @@ export function renderContribution(candidate) {
     `  issue_report_path: ${scalar(candidate.issuePath)}`, '  languages: ko,en', `  contributor: ${candidate.contributor}`,
     '---', '', candidate.content.trim(), '', '## log_task', '',
     'MCP 서버가 있으면 작업 종료 시 log_task로 작업 유형, 사람 검토 여부, 재사용 여부만 기록합니다. 대화 내용은 기록하지 않습니다. MCP가 없어도 일반 지침으로 사용합니다.',
-    'When the MCP server is available, finish by calling log_task with only task type, human review and reuse flags. Do not include conversation text. Without MCP this skill works as plain instructions.', ''
+    'When the MCP server is available, finish by calling log_task with only task type, human review and reuse flags. Do not include conversation text. This skill works as plain instructions without the MCP server.', ''
   ].join('\n');
 }
 export async function preparePreview(candidate, {crypto = globalThis.crypto} = {}) {

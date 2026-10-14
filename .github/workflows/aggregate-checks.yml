@@ -4,7 +4,7 @@ on:
     branches: [main, 'feat/5-aggregates']
   pull_request:
 concurrency:
-  group: ax-commons-verification
+  group: ax-commons-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   privacy:

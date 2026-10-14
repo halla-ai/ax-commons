@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: ax-commons-verification
+  group: ax-commons-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   contribution-checks:
