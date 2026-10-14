@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { Ledger, LEDGER_SCHEMA_VERSION } from "../src/ledger.ts";
@@ -90,6 +92,21 @@ test("consentStatus shows program-terms aggregate item, opt-in sharing, and empt
     assert.equal(sharing.kind, "opt-in");
     assert.equal(sharing.granted, false);
     assert.deepEqual(status.transmissionHistory, []);
+  } finally {
+    cleanup();
+  }
+});
+
+test("concurrent first opens of a fresh ledger all succeed (no migration race)", async () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  try {
+    const ledgerModule = new URL("../src/ledger.ts", import.meta.url).href;
+    const script = `import { Ledger } from ${JSON.stringify(ledgerModule)}; new Ledger(process.argv[1]).close();`;
+    const run = () => promisify(execFile)(process.execPath, [...process.execArgv, "--input-type=module", "-e", script, ledgerPath]);
+    await Promise.all([run(), run(), run(), run()]);
+    const ledger = new Ledger(ledgerPath);
+    ledger.close();
+    assert.equal(readAllRows(ledgerPath).consent_records.length, 1);
   } finally {
     cleanup();
   }
