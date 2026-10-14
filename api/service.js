@@ -25,6 +25,9 @@ export function createApp(env, dependencies = {}) {
       if (!/^(?:metrics|public|budget|contributions(?:\/[a-f0-9-]{36})?|expire|health)$/.test(route)) return json({error:'not_found'}, 404);
       url.pathname = route === 'health' ? '/health' : `/v1/${route}`;
       url.searchParams.delete('__route');
+      // Vercel copies a named dynamic source segment into the Fetch query.
+      // Only remove the matching contribution identifier supplied by routing.
+      if (route.startsWith('contributions/') && url.searchParams.getAll('id').length === 1 && url.searchParams.get('id') === route.slice('contributions/'.length)) url.searchParams.delete('id');
       request = new Request(url, request);
     }
     if (url.pathname === '/health' && request.method === 'GET') return json({status:'ok', version:env.AX_RELEASE_SHA || 'development'});

@@ -5,7 +5,7 @@ import { createToolHandlers, toolDescriptions, toolInputSchemas, type ToolName }
 import { registerRemoteTools } from "../../mcp-bridge/index.mjs";
 
 export const SERVER_NAME = "ax-commons";
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.2.1";
 
 export function createServer(ledger: Ledger): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
