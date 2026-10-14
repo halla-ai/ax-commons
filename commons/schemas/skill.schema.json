@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/halla-ai/ax-commons/blob/main/commons/schemas/skill.schema.json",
+  "title": "ax-commons SKILL.md frontmatter",
+  "description": "Frontmatter contract for commons/skills/<domain>/<name>/SKILL.md. Follows the open Agent Skills frontmatter so ChatGPT and Claude load it unchanged; project fields sit under metadata as string-to-string pairs.",
+  "type": "object",
+  "required": ["name", "description", "license", "metadata"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Lowercase-hyphen name, equal to the skill directory name."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the skill does and when to use it."
+    },
+    "license": {
+      "const": "CC-BY-4.0"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "required": ["purpose", "reference_sources", "reviewer", "version", "sunset", "issue_report_path", "languages"],
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What task the skill addresses and for whom."
+        },
+        "reference_sources": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Where the procedure or facts come from, separated by '; '."
+        },
+        "reviewer": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The domain reviewer responsible for the content."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Semantic version, bumped on every change."
+        },
+        "sunset": {
+          "type": "string",
+          "enum": ["full", "scope-limited", "purpose-limited"],
+          "description": "How the skill retires: removed entirely, narrowed in scope, or narrowed in purpose."
+        },
+        "issue_report_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Where users report problems with this skill."
+        },
+        "languages": {
+          "type": "string",
+          "pattern": "(^|,)(ko|en)(,|$)",
+          "description": "Comma-separated content languages; the body must carry each listed language."
+        }
+      }
+    }
+  },
+  "body": {
+    "log_task": "The body must end with a log_task step for when the ax-commons MCP server is available, and must state that the skill works as plain instructions without it."
+  }
+}
