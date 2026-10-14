@@ -62,8 +62,8 @@ User device / AI app
 
 ### 3. Commons repository
 
-- Content: `skills/`, `prompts/`, `cases/` (successes and failures), `issues/`, `CONTRIBUTORS`.
-- Licensing: to be decided (proposal: CC BY 4.0 for text, MIT for code).
+- Content lives under `commons/`: `commons/skills/`, `commons/prompts/`, `commons/cases/` (successes and failures), `commons/issues/`, plus schemas, and a generated `CONTRIBUTORS` list.
+- Licensing: CC BY 4.0 for text (skills, prompts, cases, docs), MIT for code.
 - CI checks: SKILL.md schema, PII patterns (phone, email, national ID, card numbers), secrets, prompt-injection and remote-execution instructions, link check.
 - Human review per domain via CODEOWNERS, to address malicious or low-quality skills.
 - Recognition: generated contributor list and per-skill reuse counts (from aggregates). Any material reward is decided by the program operator, not by this project.
@@ -117,6 +117,7 @@ User device / AI app
 - 2026-10-14: Repository is public under the university organization to keep the tool neutral and reduce conflict-of-interest concerns.
 - 2026-10-14: First pilot is a partner organization's staff AI training, not the voucher program itself.
 - 2026-10-14: Spec only for now; implementation start waits for the owner's go-ahead.
+- 2026-10-14: Owner gave the implementation go-ahead; phases tracked as GitHub issues #2-#7.
 - 2026-10-14: License is CC BY 4.0 for text (skills, prompts, cases, docs) and MIT for code.
 - 2026-10-14: MCP server is TypeScript on the official MCP SDK, shipped as a one-click desktop extension package.
 - 2026-10-14: Minimum cell size for published aggregates is 5.

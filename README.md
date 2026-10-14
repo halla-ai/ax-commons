@@ -15,6 +15,6 @@ Status: P0 ground rules (license, contribution rules, review rules, AI-app suppo
 This repository uses two licenses, split by content type:
 
 - **Code** under the [MIT License](LICENSE): `packages/`, `web/`, `scripts/`, CI configuration, and any other source code.
-- **Text and content** under [CC BY 4.0](LICENSE-CONTENT): `skills/`, `commons/` (prompts, cases, issue reports), `docs/`, prompts, and cases.
+- **Text and content** under [CC BY 4.0](LICENSE-CONTENT): `commons/` (skills, prompts, cases, issue reports), `docs/`, and other prose.
 
 If a file's license is unclear from its location, the notice in the file wins. Contributions are accepted under the license of the directory they land in; see [CONTRIBUTING.md](CONTRIBUTING.md).
