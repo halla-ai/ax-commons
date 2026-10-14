@@ -7,7 +7,7 @@ metadata:
   purpose: "Job seekers preparing factual, reviewed application-document drafts."
   reference_sources: "docs/pilot/fictional-exercises.md; user-supplied experience and job description"
   reviewer: "Young Joon Lee (interim; operator domain review pending)"
-  version: "1.0.2"
+  version: "1.0.3"
   sunset: "purpose-limited"
   sunset_rule: "Keep factual drafting only; retire employer-specific guidance when that listing closes or changes."
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues"
@@ -25,3 +25,6 @@ metadata:
 - 지원자가 모든 경력·날짜를 검토하게 합니다. 초안 작성은 지원 제출·고용주 연락·계정 생성 승인으로 취급하지 않습니다. 별도 요청 없이 지원자의 외부 정보를 조회하지 않습니다.
 - If `log_task` exists, record only the advertised job-seeking category and actual review/reuse flags. Keep the resume, listing, identity and contact data out of the ledger. Without MCP, provide the draft and state no local MCP log was made.
 - `log_task`가 있으면 공개된 구직 분류와 실제 검토·재사용 상태만 기록합니다. 이력서·공고·신원·연락처는 기록장에서 제외합니다. MCP가 없으면 초안을 제공하고 로컬 MCP 기록을 하지 않았다고 알립니다.
+
+- `log_task` 스키마에 `skill_id`가 있으면 `career/job-documents`를 전달합니다. 필드가 없으면 생략합니다.
+- When the advertised `log_task` schema includes `skill_id`, pass `career/job-documents`; otherwise omit this field.

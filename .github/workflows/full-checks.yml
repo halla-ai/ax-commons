@@ -32,5 +32,6 @@ jobs:
           name: ax-commons-build-${{ github.sha }}
           path: |
             packages/mcp-server/ax-commons.mcpb
+            packages/mcp-server/dist/cli.mjs
             ax-commons-mcp-server-*.tgz
             web-dist

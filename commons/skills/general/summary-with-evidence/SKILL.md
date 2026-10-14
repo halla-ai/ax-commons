@@ -6,7 +6,7 @@ metadata:
   purpose: "Help non-expert users get a document summary they can check claim by claim against the source, for reports, contracts, notices, and minutes."
   reference_sources: "ax-commons design spec (docs/specs/2026-10-14-ax-commons-design.md); evidence-marking practice from citation-required summarization workflows"
   reviewer: "Young Joon Lee (interim; operator domain review pending)"
-  version: "1.0.0"
+  version: "1.0.1"
   sunset: "scope-limited"
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues/new"
   languages: "ko,en"
@@ -65,3 +65,6 @@ Summarize a document with every claim tagged to the exact quote or span it comes
 ### Task logging
 
 When finished, and only if the ax-commons MCP server is available, call `log_task` with `task_type` set to `document-summary`, whether a human reviewed the output (`human_reviewed`), whether the output was reused (`reused`), and an optional time estimate (`minutes`). Skip this step when the server is not present. This skill works as plain instructions without the server.
+
+- `log_task` 스키마에 `skill_id`가 있으면 `general/summary-with-evidence`를 전달합니다. 필드가 없으면 생략합니다.
+- When the advertised `log_task` schema includes `skill_id`, pass `general/summary-with-evidence`; otherwise omit this field.

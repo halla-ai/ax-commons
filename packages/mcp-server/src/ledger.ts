@@ -150,6 +150,9 @@ export class Ledger {
             .prepare("INSERT INTO consent_records (recorded_at, item, kind, granted, scope, period, detail) VALUES (?, ?, ?, ?, ?, ?, ?)")
             .run(new Date().toISOString(), PROGRAM_TERMS_ITEM, "program-terms", 1, "program", null, PROGRAM_TERMS_DETAIL);
         }
+        if (version === 1) {
+          this.db.prepare("UPDATE consent_records SET detail=? WHERE item=? AND kind='program-terms'").run(PROGRAM_TERMS_DETAIL, PROGRAM_TERMS_ITEM);
+        }
         this.db.exec(`PRAGMA user_version = ${version + 1}`);
         this.db.exec("COMMIT");
       } catch (error) {

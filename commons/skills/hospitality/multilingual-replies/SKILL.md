@@ -7,7 +7,7 @@ metadata:
   purpose: "Hospitality staff drafting reviewed multilingual guest replies."
   reference_sources: "docs/pilot/fictional-exercises.md; user-supplied approved policy facts"
   reviewer: "Young Joon Lee (interim; operator domain review pending)"
-  version: "1.0.2"
+  version: "1.0.3"
   sunset: "scope-limited"
   sunset_rule: "Retire policy-dependent sections when the referenced policy changes; use only the current supplied policy."
   issue_report_path: "https://github.com/halla-ai/ax-commons/issues"
@@ -25,3 +25,6 @@ metadata:
 - 규정 관련 부분을 사용자가 확인한 뒤 사용 가능 상태로 판단합니다. 초안 작성은 고객 발송·예약 변경 승인으로 취급하지 않습니다.
 - At completion, if `log_task` is available, use its advertised schema to record the hospitality category and actual human-review/reuse flags. Do not include the guest message, reply, policy text or identifiers; do not infer that the draft was sent. Without MCP, complete the draft normally and say no local MCP log was made.
 - 완료 시 `log_task`가 있으면 공개된 입력 스키마에 맞춰 숙박 분류와 실제 사람 검토·재사용 여부만 기록합니다. 고객 메시지·답변·규정 본문·식별정보를 넣거나 발송을 추정하지 않습니다. MCP가 없으면 초안을 완성하고 로컬 MCP 기록을 하지 않았다고 알립니다.
+
+- `log_task` 스키마에 `skill_id`가 있으면 `hospitality/multilingual-replies`를 전달합니다. 필드가 없으면 생략합니다.
+- When the advertised `log_task` schema includes `skill_id`, pass `hospitality/multilingual-replies`; otherwise omit this field.

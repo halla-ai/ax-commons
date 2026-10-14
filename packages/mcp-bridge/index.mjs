@@ -88,7 +88,7 @@ export function registerRemoteTools(server, ledger, options = {}) {
     }));
   }
   function register(name, description, schema, handler) {
-    server.registerTool(name,{description,inputSchema:schema.shape},async args=>{
+    server.registerTool(name,{description,inputSchema:schema.shape,annotations:{readOnlyHint:false,destructiveHint:name!=='sync_metrics',openWorldHint:true}},async args=>{
       try {
         const parsed = schema.parse(args);
         let result;
@@ -178,7 +178,7 @@ export function registerRemoteTools(server, ledger, options = {}) {
     const result = await request('/v1/metrics',metricsToken,'POST',payload);
     if (result.accepted !== true) throw new Error('invalid receipt');
     database(db=>{db.prepare("INSERT INTO bridge_metrics VALUES (?,1,'submitted') ON CONFLICT(period) DO UPDATE SET status=CASE WHEN enabled=0 THEN status ELSE 'submitted' END").run(args.period);transmission(db,'aggregate-metrics');});
-    return {period:args.period,status:'submitted',cellCount:payload.cells.length};
+    return {period:args.period,status:database(db=>db.prepare('SELECT status FROM bridge_metrics WHERE period=?').get(args.period).status)};
   });
   register('revoke','Disable local sharing and request remote withdrawal. Public copies and immutable releases may remain; pending removal is reported honestly.',z.object({kind:z.enum(['contribution','metrics'],safeError),id:z.string().regex(UUID).optional(),period:z.string().regex(PERIOD).optional()},safeError).strict(),async args=>{
     if (args.kind === 'metrics') {
