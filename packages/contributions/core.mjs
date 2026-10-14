@@ -30,7 +30,7 @@ export function validateContribution(value) {
   if (!/^https:\/\//.test(value.issuePath)) throw new Error('HTTPS issue path required');
   const result = Object.fromEntries(FIELDS.map(key => [key, key === 'sources' ? [...value[key]] : value[key]]));
   const serialized = JSON.stringify(result);
-  if (serialized.length > 50000) throw new Error('contribution too large');
+  if (new TextEncoder().encode(serialized).byteLength > 50000) throw new Error('contribution too large');
   const blocked = [...new Set(Object.values(result).flatMap(field => (Array.isArray(field) ? field : [field]).flatMap(text => scanSafety(text))))];
   if (blocked.length) throw new Error(`unsafe contribution: ${blocked.join(', ')}`);
   if (result.type === 'skill') {

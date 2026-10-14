@@ -104,7 +104,7 @@ test('skill renders bilingual SKILL.md with terminal task logging and exact hash
   assert.equal(preview.path,'commons/skills/community/task-guide/SKILL.md');
   assert.match(preview.content,/^---\nname: task-guide/);
   assert.match(preview.content,/languages: ko,en/);
-  assert.match(preview.content,/## log_task[\s\S]*plain instructions\.\n$/);
+  assert.match(preview.content,/## log_task[\s\S]*plain instructions without the MCP server\.\n$/);
   await assert.rejects(preparePreview(fixture('skill')),/Korean and English/);
   let published;
   const flow=createContributionFlow({now:()=>now,transport:{publish:async payload=>{published=payload;return {};}}});

@@ -109,8 +109,8 @@ export function registerRemoteTools(server, ledger, options = {}) {
   },safeError).strict(),async args=>{
     if (args.action === 'preview') {
       const preview = await preparePreview(args.candidate,{crypto});
-      for (const [id,item] of previews) if (item.createdAt + 15*60000 <= clock()) previews.delete(id);
-      if (previews.size >= MAX_PREVIEWS) previews.delete(previews.keys().next().value);
+      for (const [id,item] of previews) if (item.createdAt + 15*60000 <= clock()) {clearTimeout(item.expiryTimer);previews.delete(id);}
+      if (previews.size >= MAX_PREVIEWS) {const oldest=previews.keys().next().value;clearTimeout(previews.get(oldest).expiryTimer);previews.delete(oldest);}
       const previewId = crypto.randomUUID();
       // Retain an immutable snapshot rather than caller-owned mutable objects.
       const expiryTimer = setTimeout(() => previews.delete(previewId), 15*60000);

@@ -32,3 +32,9 @@ Human installation, task logging, contribution exercises and pilot evaluation ar
 - Supply credentials out of band. Record provider version and endpoint, then read live version metadata for the exact deployed source commit. Deployment readback is not a human workflow test.
 - Roll back code only when compatible with the persisted state schema. Preserve frozen publications and withdrawal decisions; never restore withdrawn snapshots from history.
 - Report actual hosting and persistence readback separately from the deferred real-user exercises.
+
+## Independent hosting monitor
+
+- `budget-watch.yml` checks provider-reported billed usage every 15 minutes and pauses only the verified AX Commons project when nonzero billed usage is recorded. It also checks application quota warnings. Billing amounts and unrelated project data are not printed.
+- Monitoring credentials and project/team IDs are supplied through encrypted repository settings. A rotation deadline pauses the project before its monitoring credential needs renewal.
+- Provider data and scheduled jobs can be delayed. No recorded usage is not a guarantee of zero future charges; this is a best-effort control. No new paid database, integration or plan upgrade is used. A provider pause also stops HTTP withdrawal access; use the operator GitHub withdrawal procedure during a pause.
