@@ -107,7 +107,9 @@ export function validateSkillFile(filePath, schema = loadSchema()) {
     checkValue(`metadata.${key}`, value, rules, errors);
   }
 
-  if (typeof body !== "string" || !body.includes("log_task")) {
+  // The last heading-delimited section must carry the log_task step.
+  const sections = typeof body === "string" ? body.split(/^#{1,6} /m) : [];
+  if (!(sections.at(-1) ?? "").includes("log_task")) {
     errors.push("body must end with a log_task step for when the ax-commons MCP server is available");
   }
   return errors;

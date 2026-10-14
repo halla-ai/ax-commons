@@ -13,7 +13,8 @@ export type ErrorType = (typeof ERROR_TYPES)[number];
 export const CORRECTION_TYPES = ["manual-fix", "retry", "abandoned", "other"] as const;
 export type CorrectionType = (typeof CORRECTION_TYPES)[number];
 
-export const MAX_SHORT_TEXT = 200;
+export const INTENT_REASONS = ["save-time", "improve-quality", "reduce-errors", "learn-skill", "other"] as const;
+export type IntentReason = (typeof INTENT_REASONS)[number];
 export const MAX_MINUTES = 24 * 60;
 
 export const LEDGER_TABLES = ["intents", "task_logs", "issue_reports", "consent_records", "transmissions"] as const;
@@ -29,8 +30,8 @@ const MIGRATIONS: readonly string[][] = [
     `CREATE TABLE intents (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       created_at TEXT NOT NULL,
-      work_summary TEXT NOT NULL CHECK (length(work_summary) <= ${MAX_SHORT_TEXT}),
-      reason TEXT NOT NULL CHECK (length(reason) <= ${MAX_SHORT_TEXT})
+      work_type TEXT NOT NULL CHECK (work_type IN (${TASK_TYPES.map((t) => `'${t}'`).join(", ")})),
+      reason TEXT NOT NULL CHECK (reason IN (${INTENT_REASONS.map((t) => `'${t}'`).join(", ")}))
     )`,
     `CREATE TABLE task_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,16 +86,30 @@ export interface ConsentStatus {
 
 export class Ledger {
   readonly path: string;
-  private readonly db: DatabaseSync;
+  private db!: DatabaseSync;
 
   constructor(dbPath: string) {
     this.path = path.resolve(dbPath);
+    this.open();
+  }
+
+  private open(): void {
     fs.mkdirSync(path.dirname(this.path), { recursive: true });
     this.db = new DatabaseSync(this.path);
     // Two clients (e.g. Claude Desktop and another app) may run the server at once;
     // wait for the other writer instead of failing a log with SQLITE_BUSY.
     this.db.exec("PRAGMA busy_timeout = 5000");
     this.migrate();
+  }
+
+  // The user may delete the ledger file while the server runs. Reopen a fresh
+  // one instead of writing into the deleted file or failing as read-only.
+  private live(): DatabaseSync {
+    if (!fs.existsSync(this.path)) {
+      this.db.close();
+      this.open();
+    }
+    return this.db;
   }
 
   private migrate(): void {
@@ -117,29 +132,29 @@ export class Ledger {
     }
   }
 
-  declareIntent(workSummary: string, reason: string): number {
-    const result = this.db
-      .prepare("INSERT INTO intents (created_at, work_summary, reason) VALUES (?, ?, ?)")
-      .run(new Date().toISOString(), workSummary, reason);
+  declareIntent(workType: TaskType, reason: IntentReason): number {
+    const result = this.live()
+      .prepare("INSERT INTO intents (created_at, work_type, reason) VALUES (?, ?, ?)")
+      .run(new Date().toISOString(), workType, reason);
     return Number(result.lastInsertRowid);
   }
 
   logTask(taskType: TaskType, humanReviewed: boolean, reused: boolean, minutes?: number): number {
-    const result = this.db
+    const result = this.live()
       .prepare("INSERT INTO task_logs (created_at, task_type, human_reviewed, reused, minutes) VALUES (?, ?, ?, ?, ?)")
       .run(new Date().toISOString(), taskType, humanReviewed ? 1 : 0, reused ? 1 : 0, minutes ?? null);
     return Number(result.lastInsertRowid);
   }
 
   reportIssue(errorType: ErrorType, correctionType: CorrectionType): number {
-    const result = this.db
+    const result = this.live()
       .prepare("INSERT INTO issue_reports (created_at, error_type, correction_type) VALUES (?, ?, ?)")
       .run(new Date().toISOString(), errorType, correctionType);
     return Number(result.lastInsertRowid);
   }
 
   consentStatus(): ConsentStatus {
-    const records = this.db
+    const records = this.live()
       .prepare("SELECT item, kind, granted, scope, period, detail FROM consent_records ORDER BY id")
       .all() as unknown as { item: string; kind: "program-terms" | "opt-in"; granted: number; scope: string | null; period: string | null; detail: string | null }[];
     const items: ConsentItem[] = records.map((r) => ({
@@ -181,7 +196,7 @@ export class Ledger {
     };
     const counts = {} as Record<LedgerTable, number>;
     for (const table of LEDGER_TABLES) {
-      const rows = this.db.prepare(`SELECT * FROM ${table} ORDER BY id`).all();
+      const rows = this.live().prepare(`SELECT * FROM ${table} ORDER BY id`).all();
       data[table] = rows;
       counts[table] = rows.length;
     }

@@ -13,7 +13,7 @@ test("AC3: exportLedger writes a readable JSON file with every table", () => {
   const { ledgerPath, dir, cleanup } = tempLedgerPath();
   try {
     const ledger = new Ledger(ledgerPath);
-    ledger.declareIntent("q4 planning doc", "clarify priorities");
+    ledger.declareIntent("writing", "improve-quality");
     ledger.logTask("document-summary", true, true, 15);
     ledger.reportIssue("unhelpful", "retry");
     ledger.close();
@@ -30,8 +30,8 @@ test("AC3: exportLedger writes a readable JSON file with every table", () => {
     for (const table of LEDGER_TABLES) {
       assert.ok(Array.isArray(parsed[table]), `export must include ${table}`);
     }
-    const intents = parsed.intents as { work_summary: string }[];
-    assert.equal(intents[0]?.work_summary, "q4 planning doc");
+    const intents = parsed.intents as { work_type: string }[];
+    assert.equal(intents[0]?.work_type, "writing");
   } finally {
     cleanup();
   }
@@ -69,7 +69,7 @@ test("AC3: the CLI export and delete subcommands work end to end", () => {
   const { ledgerPath, dir, cleanup } = tempLedgerPath();
   try {
     const ledger = new Ledger(ledgerPath);
-    ledger.declareIntent("invoice template", "faster billing");
+    ledger.declareIntent("other", "save-time");
     ledger.close();
 
     const env = { ...process.env, AX_COMMONS_LEDGER: ledgerPath };
