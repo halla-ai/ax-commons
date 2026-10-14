@@ -12,4 +12,4 @@ for (const file of ['index.html', 'form.mjs', 'model.mjs', 'style.css']) {
 }
 fs.copyFileSync('packages/contributions/core.mjs', path.join(out, 'contribute', 'core.mjs'));
 fs.copyFileSync('commons/CONTRIBUTORS.md', path.join(out, 'contributors.md'));
-fs.writeFileSync(path.join(out, 'release.json'), JSON.stringify({commit:process.env.AX_RELEASE_SHA || 'development', version:'0.2.0'})+'\n');
+fs.writeFileSync(path.join(out, 'release.json'), JSON.stringify({commit:process.env.AX_RELEASE_SHA || 'development', version:JSON.parse(fs.readFileSync('package.json','utf8')).version})+'\n');

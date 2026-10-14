@@ -48,7 +48,7 @@ Use the linked implementation documents for endpoint paths, authentication, conf
 
 - Use the existing Vercel account and private GitHub state repository; provision no paid database or add-ons. The [deployment guide](../deployment.md) records configuration requirements.
 - Durable shared application quota limits approved contribution attempts and authenticated metrics attempts to 1,000 per UTC month; responses warn at 80%. Status, withdrawal and expiry recovery remain available after ingestion stops. Invalid or unapproved contributions do not consume contribution quota.
-- App quota is not a Vercel Pro billing ceiling: public/static traffic, rejected requests and GitHub operations can still consume resources. Provider billing-monitor source is being added; its live configuration and observed behavior remain pending. Do not promise zero overage from the app quota or absence of new paid services.
+- App quota is not a Vercel Pro billing ceiling: public/static traffic, rejected requests and GitHub operations can still consume resources. The configured GitHub Actions billing monitor checks every 15 minutes and pauses this project on recorded billed overage or before its credential rotation deadline. Provider reporting and scheduled execution can lag. Do not promise zero overage from the app quota or absence of new paid services.
 
 ## Incident and rollback
 

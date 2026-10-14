@@ -4,15 +4,64 @@
   "installCommand": "npm ci --ignore-scripts",
   "buildCommand": "node scripts/build-web.mjs",
   "outputDirectory": "web-dist",
-  "functions": {"api/service.js": {"maxDuration": 30}},
+  "functions": {
+    "api/service.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
-    {"source": "/health", "destination": "/api/service?__route=health"},
-    {"source": "/v1/:route*", "destination": "/api/service?__route=:route*"}
+    {
+      "source": "/health",
+      "destination": "/api/service?__route=health"
+    },
+    {
+      "source": "/v1/metrics",
+      "destination": "/api/service?__route=metrics"
+    },
+    {
+      "source": "/v1/public",
+      "destination": "/api/service?__route=public"
+    },
+    {
+      "source": "/v1/budget",
+      "destination": "/api/service?__route=budget"
+    },
+    {
+      "source": "/v1/contributions",
+      "destination": "/api/service?__route=contributions"
+    },
+    {
+      "source": "/v1/expire",
+      "destination": "/api/service?__route=expire"
+    },
+    {
+      "source": "/v1/contributions/:id",
+      "destination": "/api/service?__route=contributions/:id"
+    }
   ],
-  "crons": [{"path": "/v1/expire", "schedule": "0 * * * *"}],
-  "headers": [{"source": "/(.*)", "headers": [
-    {"key": "X-Content-Type-Options", "value": "nosniff"},
-    {"key": "Referrer-Policy", "value": "no-referrer"},
-    {"key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"}
-  ]}]
+  "crons": [
+    {
+      "path": "/v1/expire",
+      "schedule": "0 * * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        }
+      ]
+    }
+  ]
 }
