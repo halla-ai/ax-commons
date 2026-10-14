@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="AX Commons 공개 집계와 설치·사용 안내 / Public activity dashboard and help.">
   <title>AX Commons | 집계 현황</title>
+  <link rel="preload" href="/scene-oreum.webp" as="image" type="image/webp">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -22,22 +23,31 @@
     </nav>
   </header>
   <main id="content">
-    <p class="eyebrow">AX COMMONS / OPEN CONTRIBUTION LOOP</p>
-    <h1 data-i18n="heading">AI 활용 기록, 공유 가능한 만큼만.</h1>
-    <p class="lead" data-i18n="intro">작업과 스킬 재사용을 집계하되, 소규모 항목은 보호합니다.</p>
-    <section aria-labelledby="privacy">
-      <h2 id="privacy" data-i18n="privacy">공개 기준</h2>
-      <p data-i18n="rules">대화 내용과 기기 ID를 공개하지 않습니다. 5회 미만인 항목은 제외하고, 마감된 월의 서로 겹치지 않는 항목만 공개합니다. 합계와 기간 비교 필터는 제공하지 않습니다.</p>
-      <p data-i18n="limits">공개된 월은 고정됩니다. 활동 건수는 개별 참가자 수나 활용 성과를 뜻하지 않습니다.</p>
+    <section class="hero" aria-labelledby="heading">
+      <div>
+        <p class="eyebrow">AX COMMONS / OPEN CONTRIBUTION LOOP</p>
+        <h1 id="heading" data-i18n="heading">AI 활용 기록, 공유 가능한 만큼만.</h1>
+        <p class="lead" data-i18n="intro">작업과 스킬 재사용을 집계하되, 소규모 항목은 보호합니다.</p>
+      </div>
+      <div class="query">
+        <form id="period-form">
+          <label for="period" data-i18n="month">마감 월</label>
+          <input id="period" type="month" required>
+          <button data-i18n="view">집계 보기</button>
+        </form>
+        <p id="status" role="status" data-i18n="ready">실측 자료를 불러오기 전입니다.</p>
+      </div>
     </section>
-    <form id="period-form">
-      <label for="period" data-i18n="month">마감 월</label>
-      <input id="period" type="month" required>
-      <button data-i18n="view">집계 보기</button>
-    </form>
-    <p id="status" role="status" data-i18n="ready">실측 자료를 불러오기 전입니다.</p>
     <section id="results" aria-label="집계와 재사용 인정" data-label="results"></section>
     <noscript><p>집계 조회에는 JavaScript가 필요합니다. <a href="/help/">한국어 안내</a> · <a href="/help/en.html" lang="en">English help</a>. Aggregate API: /v1/public?period=YYYY-MM</p></noscript>
+    <div class="scene scene-oreum" aria-hidden="true"></div>
+    <section class="rules" aria-labelledby="privacy">
+      <h2 id="privacy" data-i18n="privacy">공개 기준</h2>
+      <div>
+        <p data-i18n="rules">대화 내용과 기기 ID를 공개하지 않습니다. 5회 미만인 항목은 제외하고, 마감된 월의 서로 겹치지 않는 항목만 공개합니다. 합계와 기간 비교 필터는 제공하지 않습니다.</p>
+        <p data-i18n="limits">공개된 월은 고정됩니다. 활동 건수는 개별 참가자 수나 활용 성과를 뜻하지 않습니다.</p>
+      </div>
+    </section>
     <footer>
       <nav><a href="/help/" data-help-link data-i18n="help">설치와 사용 안내</a> · <a href="/contributors.md" data-i18n="contributors">기여자 목록</a></nav>
       <p data-i18n="recognition">재사용 횟수는 기여 인정용 활동 지표입니다. 보상이나 성과 평가를 의미하지 않습니다.</p>
