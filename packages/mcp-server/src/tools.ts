@@ -19,7 +19,7 @@ export const toolInputSchemas = {
   declare_intent: z
     .object({
       work_type: fixedEnum(TASK_TYPES, "work_type").describe("Category of the one piece of work to change with AI"),
-      reason: fixedEnum(INTENT_REASONS, SKILL_IDS, "reason").describe("Why this work should change"),
+      reason: fixedEnum(INTENT_REASONS, "reason").describe("Why this work should change"),
     })
     .strict(),
   log_task: z

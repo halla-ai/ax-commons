@@ -21,6 +21,7 @@ export function registerRemoteTools(server, ledger, options = {}) {
   } catch { /* Unconfigured clients retain local tools. */ }
   const previews = new Map();
   const metricsInFlight = new Map();
+  const contributionsInFlight = new Map();
   const clock = () => Number(now());
   const timestamp = () => new Date(clock()).toISOString();
   // Per-operation connections follow a ledger recreated by the P1 delete command.
@@ -43,9 +44,9 @@ export function registerRemoteTools(server, ledger, options = {}) {
     db.prepare('INSERT INTO transmissions (sent_at,kind,detail) VALUES (?,?,?)').run(timestamp(),kind,'Structured payload sent; no conversation text');
   }
   const credential = token => typeof token === 'string' && HASH.test(token);
-  async function request(path, token, method, body) {
+  async function request(path, token, method, body, extraHeaders = {}) {
     if (!base || !credential(token)) throw new Error('unconfigured');
-    const response = await fetcher(base + path, {method,redirect:'error',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const response = await fetcher(base + path, {method,redirect:'error',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json',...extraHeaders},body:JSON.stringify(body)});
     if (!response.ok || response.redirected) throw new Error('remote operation failed');
     const reader = response.body?.getReader();
     if (!reader) throw new Error('missing response');
@@ -63,6 +64,20 @@ export function registerRemoteTools(server, ledger, options = {}) {
   function safeRecord(row) {
     const status = row.status !== 'withdrawn' && Date.parse(row.expires_at) <= clock() ? 'expired-withdrawal-pending' : row.status;
     return {id:row.id,hash:row.hash,scope:row.scope,expiresAt:row.expires_at,status,...(row.pr_url ? {url:row.pr_url} : {})};
+  }
+  const receiptStatuses = ['submitted','withdrawal-pending','publication-uncertain','withdrawn'];
+  function validateReceipt(result, id) {
+    if (!result || result.id !== id || !receiptStatuses.includes(result.status) || (result.url !== undefined && (typeof result.url !== 'string' || !/^https:\/\/github\.com\/halla-ai\/ax-commons\/pull\/[1-9][0-9]*$/.test(result.url)))) throw new Error('invalid receipt');
+    return result;
+  }
+  function getContribution(id) { return database(db=>db.prepare('SELECT * FROM bridge_contributions WHERE id=?').get(id ?? '')); }
+  async function withdraw(row) {
+    try {
+      const result = validateReceipt(await request('/v1/contributions/' + row.id,row.revoke_token,'DELETE',undefined,credential(contributionToken) ? {'X-AX-Participation-Token':contributionToken} : {}),row.id);
+      if (!['withdrawn','withdrawal-pending'].includes(result.status)) throw new Error('invalid withdrawal');
+      database(db=>{db.prepare('UPDATE bridge_contributions SET status=? WHERE id=?').run(result.status,row.id);transmission(db,'contribution-revocation');});
+    } catch { /* Retain the credential and honest withdrawal-pending state. */ }
+    return safeRecord(getContribution(row.id));
   }
   function consentStatus() {
     return database(db => ({
@@ -90,7 +105,7 @@ export function registerRemoteTools(server, ledger, options = {}) {
     });
   }
   register('submit_contribution','Preview explicitly selected contribution content; then submit the exact preview with public scope, expiry and explicit approval. Declining has no effect on support.',z.object({
-    action:z.enum(['preview','submit'],safeError),candidate:z.record(z.string(),z.unknown()).optional(),previewId:z.string().regex(UUID).optional(),hash:z.string().regex(HASH).optional(),approved:z.boolean().optional(),scope:z.literal('public',safeError).optional(),expiresAt:z.string().datetime({offset:true}).optional()
+    action:z.enum(['preview','submit','status'],safeError),candidate:z.record(z.string(),z.unknown()).optional(),id:z.string().regex(UUID).optional(),previewId:z.string().regex(UUID).optional(),hash:z.string().regex(HASH).optional(),approved:z.boolean().optional(),scope:z.literal('public',safeError).optional(),expiresAt:z.string().datetime({offset:true}).optional()
   },safeError).strict(),async args=>{
     if (args.action === 'preview') {
       const preview = await preparePreview(args.candidate,{crypto});
@@ -98,25 +113,51 @@ export function registerRemoteTools(server, ledger, options = {}) {
       if (previews.size >= MAX_PREVIEWS) previews.delete(previews.keys().next().value);
       const previewId = crypto.randomUUID();
       // Retain an immutable snapshot rather than caller-owned mutable objects.
-      previews.set(previewId,{candidate:JSON.stringify(preview.candidate),content:preview.content,hash:preview.hash,createdAt:clock()});
+      const expiryTimer = setTimeout(() => previews.delete(previewId), 15*60000);
+      expiryTimer.unref?.();
+      previews.set(previewId,{candidate:JSON.stringify(preview.candidate),content:preview.content,hash:preview.hash,createdAt:clock(),expiryTimer});
       return {previewId,content:preview.content,hash:preview.hash,path:preview.path,notice:preview.notice};
+    }
+    if (args.action === 'status') {
+      const row = getContribution(args.id);
+      if (!row || !credential(row.revoke_token)) throw new Error('unknown contribution');
+      try {
+        const result = validateReceipt(await request('/v1/contributions/' + row.id,row.revoke_token,'GET'),row.id);
+        database(db=>db.prepare("UPDATE bridge_contributions SET status=CASE WHEN status IN ('withdrawal-pending','withdrawn') AND ? NOT IN ('withdrawal-pending','withdrawn') THEN status ELSE ? END,pr_url=COALESCE(?,pr_url) WHERE id=?").run(result.status,result.status,result.url ?? null,row.id));
+      } catch { /* Read failure keeps the local uncertain or pending state. */ }
+      return safeRecord(getContribution(row.id));
     }
     const saved = previews.get(args.previewId);
     if (!saved || saved.createdAt + 15*60000 <= clock()) throw new Error('unknown or expired preview');
     const consent = validateConsent(args,saved.hash,clock());
     if (!base || !credential(contributionToken)) throw new Error('unconfigured');
     previews.delete(args.previewId); // Consume synchronously before any await or HTTP.
+    clearTimeout(saved.expiryTimer);
     const candidate = JSON.parse(saved.candidate);
     const exact = await preparePreview(candidate,{crypto});
     if (exact.content !== saved.content || await contentHash(saved.content,crypto) !== consent.hash || Date.parse(consent.expiresAt) <= clock()) throw new Error('changed or expired');
-    const result = await request('/v1/contributions',contributionToken,'POST',{candidate,...consent,approved:true});
-    if (!['submitted','withdrawal-pending','publication-uncertain','withdrawn'].includes(result.status) || typeof result.id !== 'string' || !UUID.test(result.id) || !credential(result.revokeToken) || (result.url !== undefined && (typeof result.url !== 'string' || !/^https:\/\/github\.com\/halla-ai\/ax-commons\/pull\/[1-9][0-9]*$/.test(result.url)))) throw new Error('invalid receipt');
+    const id = crypto.randomUUID();
+    const revokeToken = Array.from(crypto.getRandomValues(new Uint8Array(32)),byte=>byte.toString(16).padStart(2,'0')).join('');
     database(db=>{
-      db.prepare('INSERT INTO bridge_contributions (id,hash,scope,expires_at,submitted_at,status,revoke_token,pr_url) VALUES (?,?,?,?,?,?,?,?)').run(result.id,consent.hash,consent.scope,consent.expiresAt,timestamp(),result.status,result.revokeToken,result.url ?? null);
+      db.prepare('INSERT INTO bridge_contributions (id,hash,scope,expires_at,submitted_at,status,revoke_token,pr_url) VALUES (?,?,?,?,?,?,?,?)').run(id,consent.hash,consent.scope,consent.expiresAt,timestamp(),'publishing',revokeToken,null);
       db.prepare('INSERT INTO consent_records (recorded_at,item,kind,granted,scope,period,detail) VALUES (?,?,?,?,?,?,?)').run(timestamp(),'contribution-sharing','opt-in',1,'public',consent.expiresAt,consent.hash);
-      transmission(db,'contribution');
     });
-    return {id:result.id,...consent,status:result.status,...(result.url ? {url:result.url} : {})};
+    const operation = (async()=>{
+      try {
+        const result = validateReceipt(await request('/v1/contributions',contributionToken,'POST',{id,candidate,...consent,approved:true},{'X-AX-Withdrawal-Token':revokeToken}),id);
+        database(db=>{
+          db.prepare("UPDATE bridge_contributions SET status=CASE WHEN status IN ('withdrawal-pending','withdrawn') THEN status ELSE ? END,pr_url=? WHERE id=?").run(result.status,result.url ?? null,id);
+          transmission(db,'contribution');
+        });
+      } catch {
+        database(db=>db.prepare("UPDATE bridge_contributions SET status='publication-uncertain' WHERE id=? AND status='publishing'").run(id));
+      }
+      const row = getContribution(id);
+      if (row.status === 'withdrawal-pending') return withdraw(row);
+      return safeRecord(row);
+    })();
+    contributionsInFlight.set(id,operation);
+    try { return await operation; } finally { contributionsInFlight.delete(id); }
   });
   register('sync_metrics','Upload one explicitly approved monthly replacement snapshot. Only enumerated counts in cells of at least five leave the device; no device identity or task text is sent.',z.object({period:z.string().regex(PERIOD),approved:z.boolean()},safeError).strict(),async args=>{
     if (!args.approved || !base || !credential(metricsToken) || !(typeof programId === 'string' && PROGRAM.test(programId)) || !uploadEligible(args.period,new Date(clock()))) throw new Error('unconfigured or not approved');
@@ -136,7 +177,7 @@ export function registerRemoteTools(server, ledger, options = {}) {
     });
     const result = await request('/v1/metrics',metricsToken,'POST',payload);
     if (result.accepted !== true) throw new Error('invalid receipt');
-    database(db=>{db.prepare("INSERT INTO bridge_metrics VALUES (?,1,'submitted') ON CONFLICT(period) DO UPDATE SET status='submitted'").run(args.period);transmission(db,'aggregate-metrics');});
+    database(db=>{db.prepare("INSERT INTO bridge_metrics VALUES (?,1,'submitted') ON CONFLICT(period) DO UPDATE SET status=CASE WHEN enabled=0 THEN status ELSE 'submitted' END").run(args.period);transmission(db,'aggregate-metrics');});
     return {period:args.period,status:'submitted',cellCount:payload.cells.length};
   });
   register('revoke','Disable local sharing and request remote withdrawal. Public copies and immutable releases may remain; pending removal is reported honestly.',z.object({kind:z.enum(['contribution','metrics'],safeError),id:z.string().regex(UUID).optional(),period:z.string().regex(PERIOD).optional()},safeError).strict(),async args=>{
@@ -150,17 +191,18 @@ export function registerRemoteTools(server, ledger, options = {}) {
       database(db=>{db.prepare("UPDATE bridge_metrics SET status='withdrawn' WHERE period=?").run(args.period);transmission(db,'aggregate-revocation');});
       return {period:args.period,status:'withdrawn',publishedReleaseImmutable:result.published_release_immutable === true};
     }
-    const row = database(db=>db.prepare('SELECT * FROM bridge_contributions WHERE id=?').get(args.id ?? ''));
+    const row = getContribution(args.id);
     if (!row || !credential(row.revoke_token)) throw new Error('unknown contribution');
     if (row.status === 'withdrawn') return safeRecord(row);
     database(db=>{
       db.prepare("UPDATE bridge_contributions SET status='withdrawal-pending' WHERE id=?").run(row.id);
       db.prepare('INSERT INTO consent_records (recorded_at,item,kind,granted,scope,period,detail) VALUES (?,?,?,?,?,?,?)').run(timestamp(),'contribution-sharing','opt-in',0,'public',row.expires_at,row.hash);
     });
-    const result = await request('/v1/contributions/' + row.id,row.revoke_token,'DELETE',undefined);
-    if (!['withdrawn','withdrawal-pending'].includes(result.status)) throw new Error('invalid receipt');
-    database(db=>{db.prepare('UPDATE bridge_contributions SET status=? WHERE id=?').run(result.status,row.id);transmission(db,'contribution-revocation');});
-    return {...safeRecord({...row,status:result.status}),status:result.status};
+    const pending = contributionsInFlight.get(row.id);
+    if (pending) {try {await pending;} catch { /* Withdrawal still owns the local credential. */ }}
+    const current = getContribution(row.id);
+    if (current.status === 'withdrawn') return safeRecord(current);
+    return withdraw(current);
   });
   return {consentStatus};
 }

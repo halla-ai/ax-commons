@@ -34,6 +34,10 @@ function parseFrontmatter(content) {
   }
 }
 
+export function readSkillFile(file) {
+  return parseFrontmatter(fs.readFileSync(file, "utf8"));
+}
+
 function checkValue(label, value, rules, errors) {
   if (rules.const !== undefined && value !== rules.const) {
     errors.push(`${label} must be ${JSON.stringify(rules.const)}`);

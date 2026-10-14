@@ -69,15 +69,23 @@ export class GithubStore {
   }
   async readMonth(period) {
     const row = await this.getJson(`months/${period}.json`);
-    const state = row?.value ?? {snapshots: [], release: null};
-    if (!state || Object.keys(state).sort().join(',') !== 'release,snapshots' || !Array.isArray(state.snapshots)) throw new Error('Invalid private month state');
+    const state = row?.value ?? {snapshots: [], release: null, revoked_sources: []};
+    if (!state || !['release,snapshots', 'release,revoked_sources,snapshots'].includes(Object.keys(state).sort().join(',')) || !Array.isArray(state.snapshots)) throw new Error('Invalid private month state');
+    state.revoked_sources ??= [];
+    if (!Array.isArray(state.revoked_sources)) throw new Error('Invalid withdrawal state');
+    const revoked = new Set();
+    for (const source of state.revoked_sources) {
+      if (!source || Object.keys(source).sort().join(',') !== 'program_id,source_id' || typeof source.program_id !== 'string' || typeof source.source_id !== 'string' || !/^[a-f0-9]{32,64}$/.test(source.program_id) || !/^[a-f0-9]{32,64}$/.test(source.source_id)) throw new Error('Invalid withdrawal source');
+      const key = `${source.program_id}/${source.source_id}`;
+      if (revoked.has(key)) throw new Error('Duplicate withdrawal source'); revoked.add(key);
+    }
     const seen = new Set();
     for (const entry of state.snapshots) {
       const {source_id, ...wire} = entry;
       if (typeof source_id !== 'string' || !/^[a-f0-9]{32,64}$/.test(source_id) || wire.period !== period) throw new Error('Invalid private source');
       validateSnapshot(wire);
       const key = `${wire.program_id}/${source_id}`;
-      if (seen.has(key)) throw new Error('Duplicate private source'); seen.add(key);
+      if (seen.has(key) || revoked.has(key)) throw new Error('Duplicate or withdrawn private source'); seen.add(key);
     }
     if (state.release !== null) {
       const release = state.release;
@@ -108,16 +116,18 @@ export class GithubStore {
     const {source_id, ...wire} = value; validateSnapshot(wire);
     if (typeof source_id !== 'string' || !/^[a-f0-9]{32,64}$/.test(source_id)) throw new Error('Invalid private source');
     return this.mutateMonth(value.period, state => {
-      if (!uploadEligible(value.period, this.now()) || state.release !== null) throw new PeriodClosedError();
+      if (!uploadEligible(value.period, this.now()) || state.release !== null || state.revoked_sources.some(source => source.program_id === value.program_id && source.source_id === source_id)) throw new PeriodClosedError();
       state.snapshots = state.snapshots.filter(entry => entry.program_id !== value.program_id || entry.source_id !== source_id);
       state.snapshots.push(value); return {write: true};
     });
   }
   async revoke(value) {
     return this.mutateMonth(value.period, state => {
-      const original = state.snapshots.length;
+      if (!state.revoked_sources.some(source => source.program_id === value.program_id && source.source_id === value.source_id)) {
+        state.revoked_sources.push({program_id: value.program_id, source_id: value.source_id});
+      } else return {write: false};
       state.snapshots = state.snapshots.filter(entry => entry.program_id !== value.program_id || entry.source_id !== value.source_id);
-      return {write: state.snapshots.length !== original};
+      return {write: true};
     });
   }
   async listSnapshots(period) { return (await this.readMonth(period)).state.snapshots; }
@@ -130,7 +140,9 @@ export class GithubStore {
       return {write: true, result: state.release};
     });
   }
+  validateBudgetLimit(limit) { if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100000) throw new Error('Invalid budget limit'); }
   async takeBudget(period, limit) {
+    this.validateBudgetLimit(limit);
     for (let attempt = 0; attempt < 4; attempt++) {
       const path = `usage/${period}.json`, current = await this.getJson(path);
       const requests = current?.value.requests ?? 0;
@@ -141,5 +153,5 @@ export class GithubStore {
     }
     throw new Error('Private budget contention');
   }
-  async budget(period, limit) { const requests = (await this.getJson(`usage/${period}.json`))?.value.requests ?? 0; return {period, requests, limit, warning: requests >= limit * .8, stopped: requests >= limit}; }
+  async budget(period, limit) { this.validateBudgetLimit(limit); const requests = (await this.getJson(`usage/${period}.json`))?.value.requests ?? 0; if (!Number.isSafeInteger(requests) || requests < 0) throw new Error('Invalid budget state'); return {period, requests, limit, warning: requests >= limit * .8, stopped: requests >= limit}; }
 }

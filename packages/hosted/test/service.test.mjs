@@ -5,6 +5,8 @@ import {createHostedService} from '../service.mjs';
 import {preparePreview, contentHash} from '../../contributions/core.mjs';
 
 const participation = 'a'.repeat(64), cron = 'b'.repeat(64);
+const keys = new Map();
+const withdrawalKey = id => keys.get(id);
 const clock = Date.parse('2026-10-14T12:00:00Z');
 const candidate = {type: 'prompt', slug: 'safe-example', purpose: 'Draft a fictional checklist', sources: ['https://example.org/reference'], reviewer: 'domain-reviewer', version: '1.0.0', sunset: 'full', issuePath: 'https://github.com/halla-ai/ax-commons/issues', content: 'Use fictional quantities and mark missing facts.', contributor: 'sample-writer'};
 class StorageConflict extends Error {}
@@ -32,8 +34,8 @@ function transport() {
   };
 }
 function handler(store, adapter, time = () => clock) { return createHostedService({store, transport: adapter, contributionToken: participation, cronToken: cron, now: time, crypto: webcrypto}); }
-function request(path, token, method = 'GET', body) { return new Request(`https://service.invalid${path}`, {method, headers: {authorization: `Bearer ${token}`, 'content-type': 'application/json'}, ...(body === undefined ? {} : {body: JSON.stringify(body)})}); }
-async function submission(overrides = {}) { const preview = await preparePreview(candidate, {crypto: webcrypto}); return {candidate, hash: preview.hash, approved: true, scope: 'public', expiresAt: '2026-10-15T12:00:00Z', ...overrides}; }
+function request(path, token, method = 'GET', body) { return new Request(`https://service.invalid${path}`, {method, headers: {authorization: `Bearer ${token}`, 'content-type': 'application/json', ...(body?.id ? {'x-ax-withdrawal-token': withdrawalKey(body.id)} : {})}, ...(body === undefined ? {} : {body: JSON.stringify(body)})}); }
+async function submission(overrides = {}) { const preview = await preparePreview(candidate, {crypto: webcrypto}); const id = overrides.id ?? webcrypto.randomUUID(); if (!keys.has(id)) keys.set(id, await contentHash(id, webcrypto)); return {id, candidate, hash: preview.hash, approved: true, scope: 'public', expiresAt: '2026-10-15T12:00:00Z', ...overrides}; }
 
 test('exact approval and safety gate run before storage or transmission', async () => {
   for (const overrides of [{approved: false}, {hash: 'd'.repeat(64)}, {scope: 'reviewers-only'}, {expiresAt: '2026-10-13'}, {candidate: {...candidate, content: 'contact person@example.org'}}, {candidate: {...candidate, conversation: 'private'}}]) {
@@ -54,12 +56,12 @@ test('successful receipt stores no content or bearer secrets; per-contribution a
   const store = memoryStore(), adapter = transport(), fetch = handler(store, adapter);
   const response = await fetch(request('/v1/contributions', participation, 'POST', await submission()));
   assert.equal(response.status, 201); const result = await response.json();
-  assert.match(result.revocationToken, /^[a-f0-9]{64}$/);
+  assert.ok(!('revocationToken' in result));
   const saved = JSON.stringify([...store.rows.values()]);
-  assert.ok(!saved.includes(candidate.content)); assert.ok(!saved.includes(result.revocationToken)); assert.ok(!saved.includes(participation));
+  assert.ok(!saved.includes(candidate.content)); assert.ok(!saved.includes(withdrawalKey(result.id))); assert.ok(!saved.includes(participation));
   const other = await (await fetch(request('/v1/contributions', participation, 'POST', await submission()))).json();
-  assert.equal((await fetch(request(`/v1/contributions/${result.id}`, other.revocationToken))).status, 401);
-  const status = await (await fetch(request(`/v1/contributions/${result.id}`, result.revocationToken))).json();
+  assert.equal((await fetch(request(`/v1/contributions/${result.id}`, withdrawalKey(other.id)))).status, 401);
+  const status = await (await fetch(request(`/v1/contributions/${result.id}`, withdrawalKey(result.id)))).json();
   assert.equal(status.status, 'submitted'); assert.ok(!('revokeTokenHash' in status)); assert.ok(!('revocationToken' in status));
 });
 
@@ -73,7 +75,7 @@ test('revocation during delayed publication survives CAS and removes only after 
   const submitting = fetch(request('/v1/contributions', participation, 'POST', await submission()));
   const id = await started;
   // Test knows a token chosen by deterministic random bytes; client normally receives it on completion.
-  const revokeToken = 'e'.repeat(64);
+  const revokeToken = withdrawalKey(id);
   const path = `consents/${id.replaceAll('-', '')}.json`;
   const row = store.rows.get(path); row.value.revokeTokenHash = await contentHash(revokeToken, webcrypto);
   const revoking = await fetch(request(`/v1/contributions/${id}`, revokeToken, 'DELETE'));
@@ -92,7 +94,7 @@ test('network failure preserves uncertain metadata and a withdrawal credential a
   adapter.removed = false;
   let restarted = handler(store, adapter);
   const pending = await (await restarted(request('/v1/expire', cron))).json(); assert.deepEqual(pending, {processed: 1, pending: 1});
-  assert.equal((await (await restarted(request(`/v1/contributions/${result.id}`, result.revocationToken))).json()).status, 'withdrawal-pending');
+  assert.equal((await (await restarted(request(`/v1/contributions/${result.id}`, withdrawalKey(result.id)))).json()).status, 'withdrawal-pending');
   adapter.removed = true; restarted = handler(store, adapter);
   assert.deepEqual(await (await restarted(request('/v1/expire', cron))).json(), {processed: 1, pending: 0});
 });
@@ -103,7 +105,7 @@ test('expiry sweep requires cron auth and persists pending removal until maintai
   const fetch = handler(store, adapter, () => clock + 2 * 86400000);
   assert.equal((await fetch(request('/v1/expire', participation))).status, 401);
   assert.deepEqual(await (await fetch(request('/v1/expire', cron))).json(), {processed: 1, pending: 1});
-  assert.equal((await (await fetch(request(`/v1/contributions/${submitted.id}`, submitted.revocationToken))).json()).status, 'withdrawal-pending');
+  assert.equal((await (await fetch(request(`/v1/contributions/${submitted.id}`, withdrawalKey(submitted.id)))).json()).status, 'withdrawal-pending');
   adapter.removed = true;
   assert.deepEqual(await (await fetch(request('/v1/expire', cron))).json(), {processed: 1, pending: 0});
 });
@@ -208,9 +210,72 @@ test('durable submission budget runs only after safety and exact approval', asyn
   const oldCalls = store.calls.length, oldTransport = adapter.calls.length;
   const rejected = await fetch(request('/v1/contributions', participation, 'POST', await submission()));
   assert.equal(rejected.status, 503); assert.deepEqual(await rejected.json(), {error: 'budget_limit_reached'});
-  assert.equal(reservations, 2); assert.equal(store.calls.length, oldCalls); assert.equal(adapter.calls.length, oldTransport); assert.equal(store.rows.size, 1);
-  assert.equal((await fetch(request(`/v1/contributions/${record.id}`, record.revocationToken))).status, 200);
-  assert.equal((await fetch(request(`/v1/contributions/${record.id}`, record.revocationToken, 'DELETE'))).status, 202);
+  assert.equal(reservations, 2); assert.equal(store.calls.length, oldCalls + 1); assert.equal(adapter.calls.length, oldTransport); assert.equal(store.rows.size, 1);
+  assert.equal((await fetch(request(`/v1/contributions/${record.id}`, withdrawalKey(record.id)))).status, 200);
+  assert.equal((await fetch(request(`/v1/contributions/${record.id}`, withdrawalKey(record.id), 'DELETE'))).status, 202);
   assert.equal((await fetch(request('/v1/expire', cron))).status, 200);
   assert.equal(reservations, 2);
+});
+
+test('lost initial response can be retried with the saved ID/key without quota or republication', async () => {
+  const store = memoryStore(), adapter = transport(); let reservations = 0;
+  const fetch = createHostedService({store, transport: adapter, contributionToken: participation, cronToken: cron, now: () => clock, crypto: webcrypto,
+    reserveSubmission: async () => { reservations++; return {stopped: false, warning: false}; }});
+  const input = await submission();
+  await fetch(request('/v1/contributions', participation, 'POST', input)); // Simulate a response lost by the caller.
+  const retry = await fetch(request('/v1/contributions', participation, 'POST', input));
+  assert.equal(retry.status, 200); const status = await retry.json();
+  assert.equal(status.id, input.id); assert.equal(status.status, 'submitted');
+  assert.ok(!JSON.stringify(status).includes(withdrawalKey(input.id))); assert.ok(!('revocationToken' in status));
+  assert.equal(reservations, 1); assert.equal(adapter.calls.filter(value => value === 'publish').length, 1);
+  assert.equal((await fetch(request(`/v1/contributions/${input.id}`, withdrawalKey(input.id)))).status, 200);
+  const changed = await fetch(request('/v1/contributions', participation, 'POST', {...input, expiresAt: '2026-10-16T12:00:00Z'}));
+  assert.equal(changed.status, 409); assert.equal(reservations, 1);
+  const wrong = request('/v1/contributions', participation, 'POST', input); wrong.headers.set('x-ax-withdrawal-token', 'f'.repeat(64));
+  assert.equal((await fetch(wrong)).status, 403); assert.equal(reservations, 1);
+});
+
+test('two service instances with the same id have exactly one atomic publication winner', async () => {
+  const store = memoryStore(), adapter = transport();
+  const originalGet = store.getJson, originalPut = store.putJson;
+  let arrivals = 0, release, createAttempts = 0;
+  const barrier = new Promise(resolve => { release = resolve; });
+  store.getJson = async function(path) {
+    const result = await originalGet.call(this, path);
+    if (arrivals < 2) { arrivals++; if (arrivals === 2) release(); await barrier; }
+    return result;
+  };
+  store.putJson = async function(path, value, options) { if (options.createOnly) createAttempts++; return originalPut.call(this, path, value, options); };
+  const first = handler(store, adapter), second = handler(store, adapter);
+  const input = await submission();
+  const results = await Promise.all([first(request('/v1/contributions', participation, 'POST', input)), second(request('/v1/contributions', participation, 'POST', input))]);
+  assert.ok(results.every(result => [200, 201, 202].includes(result.status)));
+  assert.equal(createAttempts, 2);
+  assert.equal(store.rows.size, 1); assert.equal(adapter.calls.filter(value => value === 'publish').length, 1);
+  assert.equal([...store.rows.values()][0].value.status, 'submitted');
+});
+
+test('participation-authorized preemptive withdrawal tombstone blocks late submission', async () => {
+  const store = memoryStore(), adapter = transport(), fetch = handler(store, adapter), input = await submission();
+  const unknown = request(`/v1/contributions/${input.id}`, withdrawalKey(input.id), 'DELETE');
+  assert.equal((await fetch(unknown)).status, 401); assert.equal(store.rows.size, 0);
+  const authorized = request(`/v1/contributions/${input.id}`, withdrawalKey(input.id), 'DELETE');
+  authorized.headers.set('x-ax-participation-token', participation);
+  const tombstone = await fetch(authorized); assert.equal(tombstone.status, 200); assert.equal((await tombstone.json()).status, 'withdrawn');
+  const saved = [...store.rows.values()][0].value;
+  assert.deepEqual(Object.keys(saved).sort(), ['id', 'revokeTokenHash', 'revocationRequested', 'status'].sort());
+  assert.ok(!JSON.stringify(saved).includes(withdrawalKey(input.id)));
+  const late = await fetch(request('/v1/contributions', participation, 'POST', input));
+  assert.equal(late.status, 200); assert.equal((await late.json()).status, 'withdrawn'); assert.deepEqual(adapter.calls, []);
+  const badKey = request(`/v1/contributions/${input.id}`, 'f'.repeat(64));
+  assert.equal((await fetch(badKey)).status, 401);
+});
+
+test('missing or invalid client identity fails before state and publication', async () => {
+  const store = memoryStore(), adapter = transport(), fetch = handler(store, adapter);
+  const input = await submission();
+  const absentKey = request('/v1/contributions', participation, 'POST', input); absentKey.headers.delete('x-ax-withdrawal-token');
+  assert.equal((await fetch(absentKey)).status, 400);
+  assert.equal((await fetch(request('/v1/contributions', participation, 'POST', {...input, id: '../not-a-uuid'}))).status, 400);
+  assert.deepEqual(store.calls, []); assert.deepEqual(adapter.calls, []);
 });

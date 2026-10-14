@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {GithubStore} from '../src/github-store.mjs';
 import {createVercelReceiver} from '../src/vercel.mjs';
+import {createReceiver} from '../src/core.mjs';
 function github(privateRepo = true) {
   const files = new Map(); let sequence = 0, forceConflict = false, pauseWrite = null, customTree = null;
   const response = (value, status = 200) => new Response(JSON.stringify(value), {status});
@@ -114,4 +115,40 @@ test('consent listing rejects truncated or oversized trees and record overflow',
   for (const tree of [{truncated: true, tree: []}, {tree: []}, {truncated: false, tree: Array(10001).fill(null)}, {truncated: false, tree: Array.from({length: 1001}, (_, index) => ({type: 'blob', path: `consents/${index.toString(16).padStart(32, '0')}.json`}))}]) {
     service.setTree(tree); await assert.rejects(store.listConsents());
   }
+});
+
+test('independent receivers reject delayed uploads after durable remote revocation', async () => {
+  const service = github(); let date = new Date('2026-10-20T00:00:00Z');
+  const options = {token: 'test-only', repo: 'test/state', fetch: service.fetch, now: () => date};
+  const first = new GithubStore(options), second = new GithubStore(options);
+  await first.upsert(snapshot);
+  const authenticate = async () => ({program_id: program, source_id});
+  const uploadHandler = createReceiver({store: first, authenticate, now: () => date});
+  const revokeHandler = createReceiver({store: second, authenticate, now: () => date});
+  const {source_id: privateSource, ...wire} = snapshot;
+  const request = (method, value) => new Request('https://example.test/v1/metrics', {method, headers: {'content-type': 'application/json'}, body: JSON.stringify(value)});
+  let unblock, started;
+  const entered = new Promise(resolve => { started = resolve; });
+  service.pause(async () => { started(); await new Promise(resolve => { unblock = resolve; }); });
+  const upload = uploadHandler(request('POST', {...wire, cells: [{...cell, count: 9}]}));
+  await entered;
+  assert.equal((await revokeHandler(request('DELETE', {program_id: program, period: '2026-10'}))).status, 200);
+  unblock(); assert.equal((await upload).status, 409);
+  assert.deepEqual(await second.listSnapshots('2026-10'), []);
+  await second.revoke(snapshot);
+  assert.equal((await second.readMonth('2026-10')).state.revoked_sources.length, 1);
+  await first.upsert({...snapshot, source_id: 'f'.repeat(64)});
+  date = new Date('2026-11-08T00:00:00Z');
+  const released = await second.putRelease('2026-10');
+  await second.revoke({...snapshot, source_id: 'f'.repeat(64)});
+  assert.deepEqual(await first.getRelease('2026-10'), released);
+});
+test('invalid budget limits fail before any storage operation', async () => {
+  let reads = 0;
+  const store = new GithubStore({token: 'test-only', repo: 'test/state', fetch: async () => { reads++; throw new Error('must not read'); }});
+  for (const limit of [NaN, Infinity, 0, -1, 1.5, 100001, '1000', undefined]) {
+    await assert.rejects(store.takeBudget('2026-10', limit));
+    await assert.rejects(store.budget('2026-10', limit));
+  }
+  assert.equal(reads, 0);
 });

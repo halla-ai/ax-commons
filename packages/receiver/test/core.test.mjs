@@ -70,3 +70,27 @@ test('grace window closes at UTC day eight; no future or history uploads', async
     assert.throws(() => validateSnapshot({...snapshot, program_id: 12345678901234567890123456789012}));
   } finally { store.close(); }
 });
+
+test('independent SQLite receivers preserve withdrawals across late upload and reopen', async () => {
+  const directory = mkdtempSync(path.join(process.cwd(), '.receiver-test-'));
+  const filename = path.join(directory, 'state.sqlite');
+  const first = new SqliteStore(filename), second = new SqliteStore(filename);
+  const now = () => new Date('2026-10-20T00:00:00Z');
+  const authenticate = async () => ({program_id: program, source_id: device});
+  const a = createReceiver({store: first, authenticate, now}), b = createReceiver({store: second, authenticate, now});
+  try {
+    assert.equal((await a(request('POST', snapshot))).status, 200);
+    const identity = {program_id: program, period: '2026-10'};
+    assert.equal((await b(request('DELETE', identity))).status, 200);
+    assert.equal((await a(request('POST', snapshot))).status, 409);
+    assert.equal((await b(request('DELETE', identity))).status, 200);
+    assert.deepEqual(await first.listSnapshots('2026-10'), []);
+    assert.equal(first.db.prepare('SELECT count(*) AS n FROM withdrawals').get().n, 1);
+    await first.upsert({...snapshot, source_id: 'f'.repeat(64)});
+    const release = await first.putRelease('2026-10');
+    await second.revoke({...identity, source_id: 'f'.repeat(64)});
+    assert.deepEqual(await second.getRelease('2026-10'), release);
+    const reopened = new SqliteStore(filename);
+    try { await assert.rejects(reopened.upsert({...snapshot, source_id: device})); } finally { reopened.close(); }
+  } finally { first.close(); second.close(); rmSync(directory, {recursive: true}); }
+});

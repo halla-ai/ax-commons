@@ -10,8 +10,12 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 export function createApp(env, dependencies = {}) {
   const store = dependencies.store ?? new GithubStore({token:env.STATE_GITHUB_TOKEN, repo:env.STATE_REPOSITORY || 'halla-ai/ax-commons-state'});
   const transport = dependencies.transport ?? createGithubTransport({token:env.CONTRIBUTIONS_GITHUB_TOKEN});
-  const metrics = createVercelReceiver({store, credentials:JSON.parse(env.METRICS_CREDENTIALS || '{}'), requestLimit:Number(env.MONTHLY_REQUEST_LIMIT || '1000')});
-  const contributions = createHostedService({store, transport, contributionToken:env.CONTRIBUTION_TOKEN, cronToken:env.CRON_SECRET, reserveSubmission:() => store.takeBudget(new Date().toISOString().slice(0,7), Number(env.MONTHLY_REQUEST_LIMIT || '1000'))});
+  const limit = Number(env.MONTHLY_REQUEST_LIMIT || '1000');
+  const metrics = createVercelReceiver({store, credentials:JSON.parse(env.METRICS_CREDENTIALS || '{}'), requestLimit:limit});
+  const contributions = createHostedService({store, transport, contributionToken:env.CONTRIBUTION_TOKEN, cronToken:env.CRON_SECRET, reserveSubmission:() => {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) return Promise.resolve({stopped:true, warning:true});
+    return store.takeBudget(new Date().toISOString().slice(0,7), limit);
+  }});
   return async request => {
     const url = new URL(request.url);
     // Explicit rewrites retain the public contract independently of Vercel's

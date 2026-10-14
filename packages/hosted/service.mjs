@@ -2,7 +2,7 @@ import {contentHash, preparePreview, validateConsent} from '../contributions/cor
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const TOKEN = /^[a-f0-9]{64}$/;
-const INPUT = ['candidate', 'hash', 'approved', 'scope', 'expiresAt'];
+const INPUT = ['id', 'candidate', 'hash', 'approved', 'scope', 'expiresAt'];
 const PUBLISHING_LEASE_MS = 120000;
 const PUBLIC_FIELDS = ['id', 'hash', 'scope', 'expiresAt', 'path', 'type', 'contributor', 'status', 'branch', 'pr', 'url', 'fileSha', 'removalPr', 'reason'];
 class InvalidRequest extends Error {}
@@ -120,13 +120,24 @@ export function createHostedService({store, transport, contributionToken, cronTo
   }
   async function submit(request) {
     let input, preview, consent;
+    const withdrawalToken = request.headers.get('x-ax-withdrawal-token');
     try {
       input = await readBody(request);
-      if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length !== INPUT.length || Object.keys(input).some(key => !INPUT.includes(key)) || typeof input.expiresAt !== 'string') throw new InvalidRequest();
+      if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length !== INPUT.length || Object.keys(input).some(key => !INPUT.includes(key)) || typeof input.expiresAt !== 'string' || !UUID.test(input.id) || !TOKEN.test(withdrawalToken)) throw new InvalidRequest();
       preview = await preparePreview(input.candidate, {crypto});
       consent = validateConsent(input, preview.hash, now());
     } catch { return response({error: 'Invalid or unapproved contribution'}, 400); }
     // Nothing has touched the store or transport before validation and exact approval.
+    const id = input.id, revokeTokenHash = await contentHash(withdrawalToken, crypto);
+    function replay(record) {
+      if (!equalToken(revokeTokenHash, record.revokeTokenHash)) return response({error: 'Unauthorized'}, 403);
+      if (record.status !== 'withdrawn' || record.hash !== undefined) {
+        if (record.hash !== consent.hash || record.scope !== consent.scope || record.expiresAt !== consent.expiresAt) return response({error: 'Contribution ID conflict'}, 409);
+      }
+      return response({...publicRecord(record), pending: !['submitted', 'withdrawn'].includes(record.status)}, record.status === 'withdrawn' || record.status === 'submitted' ? 200 : 202);
+    }
+    const existing = await get(id);
+    if (existing) return replay(existing.value);
     const budget = reserveSubmission ? await reserveSubmission() : {stopped: false, warning: false};
     if (!budget || typeof budget.stopped !== 'boolean' || typeof budget.warning !== 'boolean') throw new Error('Invalid submission budget');
     if (budget.stopped) {
@@ -134,12 +145,12 @@ export function createHostedService({store, transport, contributionToken, cronTo
       if (budget.warning) limited.headers.set('x-budget-warning', 'true');
       return limited;
     }
-    const id = crypto.randomUUID();
-    const random = crypto.getRandomValues(new Uint8Array(32));
-    const revocationToken = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
-    const metadata = {id, ...consent, path: preview.path, type: preview.candidate.type, contributor: preview.candidate.contributor, submitted_at: new Date(now()).toISOString(), revokeTokenHash: await contentHash(revocationToken, crypto), revocationRequested: false, status: 'publishing'};
+    // A private claim distinguishes identical concurrent createOnly attempts.
+    const publicationOwner = crypto.randomUUID();
+    const metadata = {id, ...consent, path: preview.path, type: preview.candidate.type, contributor: preview.candidate.contributor, publicationOwner, submitted_at: new Date(now()).toISOString(), revokeTokenHash, revocationRequested: false, status: 'publishing'};
     const created = await store.putJson(pathFor(id), metadata, {createOnly: true});
-    if (created?.value && (created.value.id !== id || created.value.revokeTokenHash !== metadata.revokeTokenHash)) throw new Error('Consent collision');
+    if (!created?.value || created.value.id !== id) throw new Error('Consent collision');
+    if (created.value.publicationOwner !== publicationOwner) return replay(created.value);
     let record;
     try {
       // Expiry or cron revocation can happen while the initial persistence awaits.
@@ -157,7 +168,7 @@ export function createHostedService({store, transport, contributionToken, cronTo
         record = await update(id, value => ({...value, status: value.revocationRequested ? 'withdrawal-pending' : 'publication-uncertain'}));
       } catch { record = {...metadata, status: 'publication-uncertain'}; }
     }
-    const result = response({...publicRecord(record), revocationToken, pending: record.status !== 'submitted' && record.status !== 'withdrawn'}, record.status === 'submitted' ? 201 : 202);
+    const result = response({...publicRecord(record), pending: record.status !== 'submitted' && record.status !== 'withdrawn'}, record.status === 'submitted' ? 201 : 202);
     if (budget.warning) result.headers.set('x-budget-warning', 'true');
     return result;
   }
@@ -201,7 +212,15 @@ export function createHostedService({store, transport, contributionToken, cronTo
       }
       const match = url.pathname.match(/^\/v1\/contributions\/([^/]+)$/);
       if (match && UUID.test(match[1]) && ['GET', 'POST', 'DELETE'].includes(request.method)) {
-        const id = match[1], record = await authorizedRecord(request, id);
+        const id = match[1]; let record = await authorizedRecord(request, id);
+        if (!record && request.method === 'DELETE' && TOKEN.test(bearer(request)) && equalToken(request.headers.get('x-ax-participation-token'), contributionToken)) {
+          // Allow a preallocated local receipt to be withdrawn before its POST arrives.
+          const current = await get(id);
+          if (current) return response({error: 'Unauthorized'}, 401);
+          const tokenHash = await contentHash(bearer(request), crypto);
+          const created = await store.putJson(pathFor(id), {id, revokeTokenHash: tokenHash, status: 'withdrawn', revocationRequested: true}, {createOnly: true});
+          if (created?.value?.id === id && equalToken(created.value.revokeTokenHash, tokenHash)) record = created.value;
+        }
         if (!record) return response({error: 'Unauthorized'}, 401);
         if (request.method === 'GET') return response(publicRecord(record));
         // Return promptly while publish awaits; durable flag survives process loss.

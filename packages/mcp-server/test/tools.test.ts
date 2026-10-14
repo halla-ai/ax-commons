@@ -137,7 +137,7 @@ test("MCP protocol: tools/list advertises only the allowlisted fields, and a cal
       report_issue: ["correction_type", "error_type"],
       consent_status: [],
       revoke: ["id", "kind", "period"],
-      submit_contribution: ["action", "approved", "candidate", "expiresAt", "hash", "previewId", "scope"],
+      submit_contribution: ["action", "approved", "candidate", "expiresAt", "hash", "id", "previewId", "scope"],
       sync_metrics: ["approved", "period"],
     };
     for (const tool of tools) {

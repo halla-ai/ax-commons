@@ -14,3 +14,5 @@ coverage/
 web-dist/
 .vercel/
 *.tgz
+.vercel
+.env*

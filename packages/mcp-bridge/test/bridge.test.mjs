@@ -18,7 +18,7 @@ function setup(t, options = {}) {
   const server = {registerTool(name, config, handler) {handlers.set(name,handler);schemas.set(name,z.object(config.inputSchema));}};
   const api = registerRemoteTools(server,ledger,{endpoint:'https://ax-commons.vercel.app',contributionToken:'c'.repeat(64),metricsToken:'d'.repeat(64),programId:'b'.repeat(32),now:()=>fixed,fetch:async(url,config)=>{
     calls.push({url,...config});
-    const data = config.method === 'DELETE' ? (url.endsWith('/metrics') ? {revoked:true,published_release_immutable:true} : {status:'withdrawal-pending'}) : url.endsWith('/metrics') ? {accepted:true} : {id,revokeToken,status:'submitted',url:'https://github.com/halla-ai/ax-commons/pull/12'};
+    const data = config.method === 'DELETE' ? (url.endsWith('/metrics') ? {revoked:true,published_release_immutable:true} : {id:url.split('/').at(-1),status:'withdrawal-pending'}) : url.endsWith('/metrics') ? {accepted:true} : {id:JSON.parse(config.body).id,status:'submitted',url:'https://github.com/halla-ai/ax-commons/pull/12'};
     return new Response(JSON.stringify(data),{status:200});
   },...options});
   t.after(()=>{ledger.close();rmSync(dir,{recursive:true,force:true});});
@@ -37,17 +37,17 @@ test('preview makes no ledger writes or HTTP; approved exact content sends once 
   const receipt = await call('submit_contribution',approval);
   assert.equal(receipt.status,'submitted');assert.equal(receipt.revokeToken,undefined);
   assert.equal(calls.length,1);assert.equal(calls[0].redirect,'error');
-  assert.deepEqual(JSON.parse(calls[0].body),{candidate,hash:preview.hash,scope:'public',expiresAt:approval.expiresAt,approved:true});
+  assert.deepEqual(JSON.parse(calls[0].body),{id:receipt.id,candidate,hash:preview.hash,scope:'public',expiresAt:approval.expiresAt,approved:true});
   assert.equal((await call('submit_contribution',approval)).error,true);
   assert.equal(JSON.stringify(api.consentStatus()).includes(revokeToken),false);
   assert.equal(JSON.stringify(api.consentStatus()).includes(candidate.content),false);
   ledger.exportTo(join(dir,'export.json'));
   assert.equal(readFileSync(join(dir,'export.json'),'utf8').includes(revokeToken),false);
   assert.equal(readFileSync(ledger.path).includes(Buffer.from(candidate.content)),false);
-  const revoked = await call('revoke',{kind:'contribution',id});
+  const revoked = await call('revoke',{kind:'contribution',id:receipt.id});
   assert.equal(revoked.status,'withdrawal-pending');
-  assert.equal(calls[1].url,'https://ax-commons.vercel.app/v1/contributions/'+id);
-  assert.equal(calls[1].headers.Authorization,'Bearer '+revokeToken);
+  assert.equal(calls[1].url,'https://ax-commons.vercel.app/v1/contributions/'+receipt.id);
+  assert.equal(calls[1].headers.Authorization,'Bearer '+calls[0].headers['X-AX-Withdrawal-Token']);
 });
 test('metrics suppress small cells and replace a fixed period without identity or timestamps',async t=>{
   const {ledger,calls,call} = setup(t);
@@ -79,7 +79,7 @@ test('network failure consumes preview and never echoes remote content',async t=
   const preview = await call('submit_contribution',{action:'preview',candidate});
   const args = {action:'submit',previewId:preview.previewId,hash:preview.hash,scope:'public',expiresAt:new Date(fixed+86400000).toISOString(),approved:true};
   const result = await call('submit_contribution',args);
-  assert.equal(result.error,true);assert.equal(result.text.includes('unsafe remote secret'),false);
+  assert.equal(result.status,'publication-uncertain');assert.equal(JSON.stringify(result).includes('unsafe remote secret'),false);
   assert.equal((await call('submit_contribution',args)).error,true);
 });
 test('deleted ledger is recreated and expired previews send nothing',async t=>{
@@ -112,12 +112,12 @@ test('revocation waits for an active metrics upload, then deletes and prevents r
   assert.equal(api.consentStatus().metrics[0].enabled,false);
 });
 test('malformed and oversize receipts remain generic and never persist server-controlled metadata',async t=>{
-  for (const data of [{id:'wrong',revokeToken,status:'submitted'}, {id,revokeToken:'wrong',status:'submitted'}, {id,revokeToken,status:'submitted',url:'https://evil.example/secret'}, {padding:'x'.repeat(9000)}]) {
+  for (const data of [{id:'wrong',revokeToken,status:'submitted'}, {id,revokeToken:'wrong',status:'submitted'}, {id,status:'submitted',url:'https://evil.example/secret'}, {padding:'x'.repeat(9000)}]) {
     const {call,api} = setup(t,{fetch:async()=>new Response(JSON.stringify(data))});
     const preview = await call('submit_contribution',{action:'preview',candidate});
     const result = await call('submit_contribution',{action:'submit',previewId:preview.previewId,hash:preview.hash,scope:'public',expiresAt:new Date(fixed+86400000).toISOString(),approved:true});
-    assert.equal(result.error,true);assert.equal(result.text.includes('evil'),false);
-    assert.deepEqual(api.consentStatus().contributions,[]);
+    assert.equal(result.status,'publication-uncertain');assert.equal(JSON.stringify(result).includes('evil'),false);
+    assert.equal(api.consentStatus().contributions[0].status,'publication-uncertain');
   }
 });
 
@@ -170,4 +170,77 @@ test('malformed contribution credential disables submission before HTTP',async t
     assert.equal((await call('submit_contribution',{action:'submit',previewId:preview.previewId,hash:preview.hash,scope:'public',expiresAt:new Date(fixed+86400000).toISOString(),approved:true})).error,true);
     assert.equal(calls.length,0);
   }
+});
+test('lost POST response retains local withdrawal control and status reconciliation',async t=>{
+  let remote,withdrawn=false;
+  const {call,api} = setup(t,{fetch:async(url,config)=>{
+    if (config.method === 'POST') {
+      remote = {id:JSON.parse(config.body).id,key:config.headers['X-AX-Withdrawal-Token']};
+      throw new Error('response lost after successful publication');
+    }
+    assert.equal(config.headers.Authorization,'Bearer '+remote.key);
+    if (config.method === 'DELETE') {
+      assert.equal(config.headers['X-AX-Participation-Token'],'c'.repeat(64));
+      withdrawn=true;
+    }
+    return new Response(JSON.stringify({id:remote.id,status:withdrawn ? 'withdrawn' : 'submitted'}));
+  }});
+  const preview=await call('submit_contribution',{action:'preview',candidate});
+  const sent=await call('submit_contribution',{action:'submit',previewId:preview.previewId,hash:preview.hash,scope:'public',expiresAt:new Date(fixed+86400000).toISOString(),approved:true});
+  assert.equal(sent.status,'publication-uncertain');
+  assert.equal(sent.id,remote.id);
+  assert.equal(JSON.stringify(sent).includes(remote.key),false);
+  assert.equal((await call('submit_contribution',{action:'status',id:sent.id})).status,'submitted');
+  assert.equal((await call('revoke',{kind:'contribution',id:sent.id})).status,'withdrawn');
+  assert.equal(api.consentStatus().contributions[0].status,'withdrawn');
+});
+test('shared-ledger revoker wins while another bridge has publication in flight',async t=>{
+  let release;
+  const delayed=new Promise(resolve=>{release=resolve;});
+  let withdrawn=false,remoteId;
+  const fetcher=async(url,config)=>{
+    if (config.method === 'POST') {
+      remoteId=JSON.parse(config.body).id;
+      await delayed;
+      return new Response(JSON.stringify({id:remoteId,status:withdrawn ? 'withdrawn' : 'submitted'}));
+    }
+    withdrawn=true;
+    return new Response(JSON.stringify({id:remoteId,status:'withdrawn'}));
+  };
+  const {ledger,call,api}=setup(t,{fetch:fetcher});
+  const handlers=new Map();
+  registerRemoteTools({registerTool(name,config,handler){handlers.set(name,handler);}},ledger,{endpoint:'https://ax-commons.vercel.app',contributionToken:'c'.repeat(64),fetch:fetcher,now:()=>fixed});
+  const preview=await call('submit_contribution',{action:'preview',candidate});
+  const sending=call('submit_contribution',{action:'submit',previewId:preview.previewId,hash:preview.hash,scope:'public',expiresAt:new Date(fixed+86400000).toISOString(),approved:true});
+  for (let i=0;i<50 && !remoteId;i++) await new Promise(resolve=>setTimeout(resolve,2));
+  assert.equal(api.consentStatus().contributions[0].status,'publishing');
+  const result=await handlers.get('revoke')({kind:'contribution',id:remoteId});
+  assert.equal(JSON.parse(result.content[0].text).status,'withdrawn');
+  release();
+  assert.equal((await sending).status,'withdrawn');
+  assert.equal(api.consentStatus().contributions[0].status,'withdrawn');
+});
+test('same bridge revocation waits for publisher and triggers remote removal without overwriting intent',async t=>{
+  let release,remoteId;
+  const delayed=new Promise(resolve=>{release=resolve;});
+  const calls=[];
+  const {call,api}=setup(t,{fetch:async(url,config)=>{
+    calls.push(config.method);
+    if (config.method==='POST') {
+      remoteId=JSON.parse(config.body).id;await delayed;
+      return new Response(JSON.stringify({id:remoteId,status:'submitted'}));
+    }
+    return new Response(JSON.stringify({id:remoteId,status:'withdrawn'}));
+  }});
+  const preview=await call('submit_contribution',{action:'preview',candidate});
+  const sending=call('submit_contribution',{action:'submit',previewId:preview.previewId,hash:preview.hash,scope:'public',expiresAt:new Date(fixed+86400000).toISOString(),approved:true});
+  for(let i=0;i<50&&!remoteId;i++) await new Promise(resolve=>setTimeout(resolve,2));
+  const withdrawal=call('revoke',{kind:'contribution',id:remoteId});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(api.consentStatus().contributions[0].status,'withdrawal-pending');
+  assert.deepEqual(calls,['POST']);
+  release();
+  assert.equal((await sending).status,'withdrawn');
+  assert.equal((await withdrawal).status,'withdrawn');
+  assert.deepEqual(calls,['POST','DELETE']);
 });

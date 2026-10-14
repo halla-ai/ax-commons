@@ -20,9 +20,16 @@ CREATE TABLE releases (
   period TEXT PRIMARY KEY,
   payload TEXT NOT NULL
 );
+CREATE TABLE withdrawals (
+  program_id TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  period TEXT NOT NULL,
+  PRIMARY KEY (program_id, source_id, period)
+);
 ```
 
 - `snapshots.payload`: validated aggregate snapshot JSON only. Replacement is atomic on the composite primary key. No content, access tokens, IP addresses or user-account mapping columns exist.
+- `withdrawals`: durable program/source/month tombstones; immediate transactions add a tombstone and delete the snapshot atomically. Upserts check withdrawal and frozen-release state inside the same write transaction. Repeated withdrawal is idempotent and cannot alter a published release.
 - `releases.payload`: frozen suppressed public JSON, with no private source keys or contribution totals. Insert-if-absent only.
 - Credentials are runtime secrets outside the database and repository. Host access logs and error handling must avoid request bodies and credentials.
 - Backups need the same access restriction and retention controls as active snapshots. Authenticated source revocation removes the active snapshot; backup retention must be disclosed by the operator.
@@ -36,7 +43,7 @@ CREATE TABLE releases (
 
 ## Private GitHub storage adapter
 
-- Logical records use `months/<month>.json` and `usage/<month>.json` in the verified private repository. A month record contains exactly `{snapshots:[],release:null}` until publication, then an immutable suppressed release object. Each private snapshot contains validated wire fields plus the server-derived source key; the program/source pair is unique within the month.
+- Logical records use `months/<month>.json` and `usage/<month>.json` in the verified private repository. A month record contains exactly `{snapshots:[],release:null,revoked_sources:[]}` until publication, then an immutable suppressed release object. Each private snapshot contains validated wire fields plus the server-derived source key; the program/source pair is unique within the month. `revoked_sources` contains unique private `{program_id,source_id}` withdrawal tombstones; a withdrawn pair may never appear in the snapshot array. Legacy month records without this field are read as having no prior tombstones and gain the field on their next atomic mutation.
 - `consents/<random-hex>.json` is a separate restricted namespace for the approved contribution workflow. Generic adapter paths are allowlisted; arbitrary paths and traversal are rejected.
-- GitHub contents SHA supplies optimistic compare-and-swap. Monthly mutation retries conflicts at most four times. Upload retries recheck eligibility and frozen state; release mutation recomputes from the current snapshot array. Once the release field is set, no upload can replace it. Repository visibility is checked afresh before each content operation.
+- GitHub contents SHA supplies optimistic compare-and-swap. Monthly mutation retries conflicts at most four times. Upload retries recheck eligibility, frozen state and withdrawal tombstones; release mutation recomputes from the current snapshot array. Once the release field is set, no upload can replace it. Repository visibility is checked afresh before each content operation.
 - Deleting a current snapshot does not purge historical Git commits. Disclose the operator's private history and backup retention; see `docs/deployment.md`.
