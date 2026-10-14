@@ -8,3 +8,5 @@ dist/
 *.dxt
 *.mcpb
 coverage/
+
+.worktrees/
