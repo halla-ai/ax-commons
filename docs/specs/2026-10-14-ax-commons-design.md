@@ -1,6 +1,6 @@
 # AX Commons: design
 
-Status: draft (no implementation branch yet; implementation starts only on the owner's go-ahead)
+Status: approved; implementation in progress (phases tracked as GitHub issues #2-#7)
 Date: 2026-10-14
 
 ## Problem
@@ -117,3 +117,6 @@ User device / AI app
 - 2026-10-14: Repository is public under the university organization to keep the tool neutral and reduce conflict-of-interest concerns.
 - 2026-10-14: First pilot is a partner organization's staff AI training, not the voucher program itself.
 - 2026-10-14: Spec only for now; implementation start waits for the owner's go-ahead.
+- 2026-10-14: License is CC BY 4.0 for text (skills, prompts, cases, docs) and MIT for code.
+- 2026-10-14: MCP server is TypeScript on the official MCP SDK, shipped as a one-click desktop extension package.
+- 2026-10-14: Minimum cell size for published aggregates is 5.
