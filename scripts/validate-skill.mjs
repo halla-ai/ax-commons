@@ -85,8 +85,9 @@ export function validateSkillFile(filePath, schema = loadSchema()) {
 
   // The last heading-delimited section must carry the log_task step.
   const sections = typeof body === "string" ? body.split(/^#{1,6} /m) : [];
-  const lastSection = sections.at(-1) ?? "";
-  if (!lastSection.includes("log_task")) {
+  // Skip the heading line itself: "## Do not call log_task" is not an instruction.
+  const lastSection = sections.length > 1 ? (sections.at(-1) ?? "").replace(/^.*\n?/, "") : (sections[0] ?? "");
+  if (!lastSection.includes("log_task") || /\b(do not|don't|never|not)\s+(call|use|invoke)\s+`?log_task/i.test(lastSection)) {
     errors.push("body must end with a log_task step for when the ax-commons MCP server is available");
   } else if (
     !/works?\b[^.]*\bwithout (the |an? )?(ax-commons )?(MCP |local )?(server|MCP)|\bwithout (the |an? )?(ax-commons )?(MCP|server),|서버 없이도/i.test(lastSection) ||

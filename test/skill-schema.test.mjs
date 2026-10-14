@@ -147,6 +147,32 @@ test("AC4: unquoted YAML non-string scalars fail", () => {
   }
 });
 
+test("AC4: an unterminated quoted value fails", () => {
+  const broken = VALID_FRONTMATTER.replace('purpose: "fixture purpose"', 'purpose: "unterminated');
+  const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);
+  try {
+    const errors = validateSkillFile(file);
+    assert.ok(errors.some((e) => e.includes("purpose")), `expected a purpose error, got: ${errors.join("; ")}`);
+  } finally {
+    cleanup();
+  }
+});
+
+test("AC4: log_task only in the final heading, or negated, fails", () => {
+  for (const body of [
+    "## Do not call log_task\nThis skill works without the server.",
+    "## Logging\nDo not call log_task. This skill works without the server.",
+  ]) {
+    const { file, cleanup } = writeFixture("fixture-skill", VALID_FRONTMATTER, body);
+    try {
+      const errors = validateSkillFile(file);
+      assert.ok(errors.some((e) => e.includes("log_task")), `expected a log_task error for ${JSON.stringify(body)}, got: ${errors.join("; ")}`);
+    } finally {
+      cleanup();
+    }
+  }
+});
+
 test("AC4: an unsupported language in the list fails", () => {
   const broken = VALID_FRONTMATTER.replace('languages: "ko,en"', 'languages: "ko,en,fr"');
   const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);
