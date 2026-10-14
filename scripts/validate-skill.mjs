@@ -112,7 +112,10 @@ export function validateSkillFile(filePath, schema = loadSchema()) {
   const lastSection = sections.at(-1) ?? "";
   if (!lastSection.includes("log_task")) {
     errors.push("body must end with a log_task step for when the ax-commons MCP server is available");
-  } else if (!/without (the |an? )?(ax-commons )?(MCP |local )?(server|MCP)|서버[가 ]*없/i.test(lastSection)) {
+  } else if (
+    !/works?\b[^.]*\bwithout (the |an? )?(ax-commons )?(MCP |local )?(server|MCP)|\bwithout (the |an? )?(ax-commons )?(MCP|server),|서버 없이도/i.test(lastSection) ||
+    /\b(not|n't|cannot|never)\s+(work|function|run)\w*\s+without\b|없이는\s*(작동|동작|사용)/i.test(lastSection)
+  ) {
     errors.push("the final log_task section must state that the skill works without the MCP server");
   }
   return errors;

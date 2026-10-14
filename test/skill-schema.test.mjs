@@ -123,6 +123,17 @@ test("AC4: a final log_task section without the no-server fallback fails", () =>
   }
 });
 
+test("AC4: a negated no-server fallback fails", () => {
+  const body = "## Logging\nCall log_task. This skill does not work without the server.";
+  const { file, cleanup } = writeFixture("fixture-skill", VALID_FRONTMATTER, body);
+  try {
+    const errors = validateSkillFile(file);
+    assert.ok(errors.some((e) => e.includes("without the MCP server")), `expected a fallback error, got: ${errors.join("; ")}`);
+  } finally {
+    cleanup();
+  }
+});
+
 test("AC4: an unsupported language in the list fails", () => {
   const broken = VALID_FRONTMATTER.replace('languages: "ko,en"', 'languages: "ko,en,fr"');
   const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);
