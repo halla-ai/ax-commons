@@ -1,9 +1,16 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AX Commons 자료 공유</title><link rel="stylesheet" href="./style.css"></head>
-<body><main>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AX Commons 자료 공유</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="./style.css"></head>
+<body>
+<a class="skip-link" href="#main">본문으로 이동</a>
+<header class="site-header">
+<a class="brand" href="/">AX COMMONS</a>
+<nav class="site-nav" aria-label="주 메뉴"><a href="/">집계 현황</a><a href="/help/">설치와 사용 안내</a><a href="/contribute/" aria-current="page">기여 자료 공유</a></nav>
+</header>
+<main id="main" class="form-main">
 <h1>공유할 경험을 남겨주세요</h1>
-<p>재사용할 프롬프트, 작업 방법, 성공·실패 사례를 기여할 수 있습니다. 공유할 자료만 직접 입력하고, 대화 기록이나 개인정보는 넣지 마세요. 공유하지 않아도 프로그램 지원은 동일합니다.</p>
+<p class="lead">재사용할 프롬프트, 작업 방법, 성공·실패 사례를 기여할 수 있습니다. 공유할 자료만 직접 입력하고, 대화 기록이나 개인정보는 넣지 마세요. 공유하지 않아도 프로그램 지원은 동일합니다.</p>
+<div class="scene scene-wall" aria-hidden="true"></div>
 <form id="form">
 <label for="participation">참여 코드</label><input id="participation" type="password" required autocomplete="off" minlength="64" maxlength="64" pattern="[a-fA-F0-9]{64}" aria-describedby="code-help"><p id="code-help" class="help">운영자가 발급한 코드를 입력하세요. 브라우저에 저장하지 않습니다.</p>
 <label for="type">자료 종류</label><select id="type"><option value="prompt">프롬프트</option><option value="skill">작업 방법 (Skill)</option><option value="case-success">성공 사례</option><option value="case-failure">실패 사례</option><option value="issue">문제 보고</option></select>

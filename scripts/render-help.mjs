@@ -49,6 +49,7 @@ export function renderHelp(language, content = helpContent[language]) {
 </header>
 <main id="content" class="help-main">
 <header class="help-intro"><p class="eyebrow">AX COMMONS / ${en ? 'USER GUIDE' : '사용 안내'}</p><h1>${escapeHtml(content.title)}</h1><p class="lead">${escapeHtml(content.description)}</p><p>${escapeHtml(content.intro)}</p></header>
+<div class="scene scene-grass" aria-hidden="true"></div>
 <div class="help-layout">
 <aside><nav class="contents" aria-label="${contents}"><p>${contents}</p><a href="#quick-start">${quick}</a>${sectionLinks}<a href="#faq">FAQ</a></nav></aside>
 <article>
