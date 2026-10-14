@@ -5,6 +5,9 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: ax-commons-verification
+  cancel-in-progress: false
 jobs:
   contribution-checks:
     runs-on: ubuntu-latest
@@ -14,7 +17,8 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.13.1'
+          node-version: '24'
+      - run: npm ci
       - name: Consent and unsafe fixture regression tests
         run: node --test --test-concurrency=2 packages/contributions/*.test.mjs
       - name: Schema and safety of changed contribution files

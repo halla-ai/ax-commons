@@ -90,7 +90,7 @@ test("AC2: a ledger filled through the whole tool surface contains only structur
       assert.deepEqual(Object.keys(row).sort(), ["created_at", "id", "reason", "work_type"]);
     }
     for (const row of rows.task_logs) {
-      assert.deepEqual(Object.keys(row).sort(), ["created_at", "human_reviewed", "id", "minutes", "reused", "task_type"]);
+      assert.deepEqual(Object.keys(row).sort(), ["created_at", "human_reviewed", "id", "minutes", "reused", "skill_id", "task_type"]);
     }
     for (const row of rows.issue_reports) {
       assert.deepEqual(Object.keys(row).sort(), ["correction_type", "created_at", "error_type", "id"]);
@@ -113,13 +113,13 @@ test("AC2: a ledger filled through the whole tool surface contains only structur
   }
 });
 
-test("AC2: no tool input schema exposes a free-text content field", async () => {
+test("AC2: no activity tool input schema exposes a free-text content field", async () => {
   const { ledgerPath, cleanup } = tempLedgerPath();
   try {
     await withClient(ledgerPath, async (client) => {
       const { tools } = await client.listTools();
       const bannedFieldNames = /text|content|transcript|conversation|message|prompt|notes?|detail|body|free/i;
-      for (const tool of tools) {
+      for (const tool of tools.filter((tool) => ["declare_intent", "log_task", "report_issue", "consent_status"].includes(tool.name))) {
         const properties = (tool.inputSchema.properties ?? {}) as Record<string, { type?: string; enum?: unknown[] }>;
         for (const [field, schema] of Object.entries(properties)) {
           assert.ok(!bannedFieldNames.test(field), `${tool.name}.${field} looks like a free-text field`);

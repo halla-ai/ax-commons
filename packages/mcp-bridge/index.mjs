@@ -90,7 +90,7 @@ export function registerRemoteTools(server, ledger, options = {}) {
     });
   }
   register('submit_contribution','Preview explicitly selected contribution content; then submit the exact preview with public scope, expiry and explicit approval. Declining has no effect on support.',z.object({
-    action:z.enum(['preview','submit'],safeError),candidate:z.record(z.string(),z.unknown()).optional(),previewId:z.string().regex(UUID).optional(),hash:z.string().regex(HASH).optional(),approved:z.boolean().optional(),scope:z.literal('public',safeError).optional(),expiresAt:z.string().optional()
+    action:z.enum(['preview','submit'],safeError),candidate:z.record(z.string(),z.unknown()).optional(),previewId:z.string().regex(UUID).optional(),hash:z.string().regex(HASH).optional(),approved:z.boolean().optional(),scope:z.literal('public',safeError).optional(),expiresAt:z.string().datetime({offset:true}).optional()
   },safeError).strict(),async args=>{
     if (args.action === 'preview') {
       const preview = await preparePreview(args.candidate,{crypto});

@@ -2,9 +2,12 @@ name: Full release checks
 on:
   pull_request:
   push:
-    branches: [main, 'feat/1-deployment']
+    branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: ax-commons-verification
+  cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest

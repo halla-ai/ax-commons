@@ -3,6 +3,9 @@ on:
   push:
     branches: [main, 'feat/5-aggregates']
   pull_request:
+concurrency:
+  group: ax-commons-verification
+  cancel-in-progress: false
 jobs:
   privacy:
     runs-on: ubuntu-latest
