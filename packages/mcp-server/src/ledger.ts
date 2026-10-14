@@ -63,8 +63,6 @@ const MIGRATIONS: readonly string[][] = [
       kind TEXT NOT NULL,
       detail TEXT
     )`,
-    `INSERT INTO consent_records (recorded_at, item, kind, granted, scope, period, detail)
-     VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), '${PROGRAM_TERMS_ITEM}', 'program-terms', 1, 'program', NULL, '${PROGRAM_TERMS_DETAIL.replaceAll("'", "''")}')`,
   ],
 ];
 
@@ -126,6 +124,13 @@ export class Ledger {
         }
         for (const statement of MIGRATIONS[version] ?? []) {
           this.db.exec(statement);
+        }
+        if (version === 0) {
+          // Seed the program-terms consent record with bound parameters;
+          // never interpolate text into migration SQL.
+          this.db
+            .prepare("INSERT INTO consent_records (recorded_at, item, kind, granted, scope, period, detail) VALUES (?, ?, ?, ?, ?, ?, ?)")
+            .run(new Date().toISOString(), PROGRAM_TERMS_ITEM, "program-terms", 1, "program", null, PROGRAM_TERMS_DETAIL);
         }
         this.db.exec(`PRAGMA user_version = ${version + 1}`);
         this.db.exec("COMMIT");

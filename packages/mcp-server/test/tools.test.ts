@@ -90,7 +90,11 @@ test("log_task validates booleans and the minutes range", () => {
   });
 });
 
-test("unexpected extra fields are rejected (strict objects)", () => {
+// .strict() guards direct handler calls (tests, future non-SDK callers). Over
+// the MCP protocol the SDK strips unknown keys before the handler runs, so an
+// extra field can never reach the ledger either way; privacy.test.ts covers
+// the protocol path.
+test("unexpected extra fields are rejected on direct handler calls (strict objects)", () => {
   withHandlers((handlers) => {
     assert.throws(() =>
       handlers.log_task({ task_type: "coding", human_reviewed: true, reused: true, transcript: "free text" }),
