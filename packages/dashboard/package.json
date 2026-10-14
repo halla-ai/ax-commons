@@ -1,1 +1,1 @@
-{"name":"@ax-commons/dashboard","version":"0.1.0","private":true,"type":"module","scripts":{"build":"node --check public/app.mjs && node --check public/model.mjs && node --check public/language.mjs","test":"node --test --test-concurrency=2 test/*.test.mjs"}}
+{"name":"@ax-commons/dashboard","version":"0.1.0","private":true,"type":"module","scripts":{"build":"node --check public/app.mjs && node --check public/model.mjs && node --check public/language.mjs && node --check public/theme.js","test":"node --test --test-concurrency=2 test/*.test.mjs"}}

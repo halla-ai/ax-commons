@@ -16,3 +16,11 @@ test('static pages use unique element IDs, so script lookups hit the intended no
     assert.deepEqual(ids.filter((id, index) => ids.indexOf(id) !== index), [], name);
   }
 });
+
+test('every static page loads the theme script once and ships a hidden three-way theme switch', () => {
+  for (const [name, html] of Object.entries(pages)) {
+    assert.equal(html.split('<script src="/theme.js"></script>').length - 1, 1, name);
+    assert.match(html, /<div class="theme-switch" role="group" aria-label="[^"]+" (?:data-label="theme" )?hidden>/, name);
+    for (const choice of ['system', 'light', 'dark']) assert.ok(html.includes('data-theme-choice="' + choice + '"'), name + ' ' + choice);
+  }
+});

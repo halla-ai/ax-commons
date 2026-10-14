@@ -4,6 +4,9 @@ import {helpContent} from '../web/help/content.mjs';
 import {renderHelp} from '../scripts/render-help.mjs';
 import {languageFrom, messages} from '../packages/dashboard/public/language.mjs';
 
+// The same-origin theme script is the only script allowed on help pages; the pages stay complete without it.
+const withoutThemeScript = html => html.replace('<script src="/theme.js"></script>', '');
+
 test('unrecognized dashboard locales fall back to Korean, never to URL content', () => {
   for (const search of ['', '?lang=ko', '?lang=fr', '?lang=EN', '?lang=script']) assert.equal(languageFrom(search), 'ko');
   assert.equal(languageFrom('?period=2026-09&lang=en'), 'en');
@@ -26,7 +29,7 @@ test('both static help routes are complete and navigable without scripts', () =>
       assert.ok(html.includes('id="' + id + '"'));
     }
     assert.ok(html.includes('/releases/latest'));
-    assert.doesNotMatch(html, /<script|onclick=|localStorage|<iframe/);
+    assert.doesNotMatch(withoutThemeScript(html), /<script|onclick=|localStorage|<iframe/);
     const sharing = content.sections.find(section => section.id === 'sharing').paragraphs.join(' ');
     assert.match(sharing, /reviewers-only/);
     assert.match(sharing, /90/);
@@ -43,7 +46,7 @@ test('help renderer escapes content and rejects executable links or malformed an
   assert.ok(html.includes('&lt;script&gt;'));
   assert.ok(html.includes('&lt;img'));
   assert.ok(html.includes('A &amp; B &quot;quoted&quot;'));
-  assert.doesNotMatch(html, /<script|<img/);
+  assert.doesNotMatch(withoutThemeScript(html), /<script|<img/);
   content.sections[0].links[0].href = 'javascript:alert(1)';
   assert.throws(() => renderHelp('en', content), /Unsupported help link/);
   content.sections[0].links[0].href = 'https://github.com/halla-ai/ax-commons/releases/latest';
