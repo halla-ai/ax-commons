@@ -1,0 +1,141 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import fs from "node:fs";
+import { DatabaseSync } from "node:sqlite";
+import { Ledger, LEDGER_SCHEMA_VERSION } from "../src/ledger.ts";
+import { readAllRows, tempLedgerPath } from "./helpers.ts";
+
+test("creates the ledger file and all tables on first open", () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  try {
+    const ledger = new Ledger(ledgerPath);
+    ledger.close();
+    assert.ok(fs.existsSync(ledgerPath));
+    const rows = readAllRows(ledgerPath);
+    for (const table of Object.keys(rows)) {
+      assert.ok(Array.isArray(rows[table as keyof typeof rows]));
+    }
+  } finally {
+    cleanup();
+  }
+});
+
+test("migration is idempotent and sets the schema version", () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  try {
+    new Ledger(ledgerPath).close();
+    new Ledger(ledgerPath).close();
+    const db = new DatabaseSync(ledgerPath, { readOnly: true });
+    const row = db.prepare("PRAGMA user_version").get() as { user_version: number };
+    db.close();
+    assert.equal(row.user_version, LEDGER_SCHEMA_VERSION);
+  } finally {
+    cleanup();
+  }
+});
+
+test("declareIntent, logTask and reportIssue persist structured rows", () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  try {
+    const ledger = new Ledger(ledgerPath);
+    const intentId = ledger.declareIntent("data", "save-time");
+    const taskLogId = ledger.logTask("document-summary", true, false, 25);
+    const issueId = ledger.reportIssue("wrong-facts", "manual-fix");
+    ledger.close();
+
+    assert.ok(intentId >= 1 && taskLogId >= 1 && issueId >= 1);
+    const rows = readAllRows(ledgerPath);
+    assert.equal(rows.intents.length, 1);
+    assert.equal(rows.intents[0]?.work_type, "data");
+    assert.equal(rows.intents[0]?.reason, "save-time");
+    assert.equal(rows.task_logs.length, 1);
+    assert.equal(rows.task_logs[0]?.task_type, "document-summary");
+    assert.equal(rows.task_logs[0]?.human_reviewed, 1);
+    assert.equal(rows.task_logs[0]?.reused, 0);
+    assert.equal(rows.task_logs[0]?.minutes, 25);
+    assert.equal(rows.issue_reports.length, 1);
+    assert.equal(rows.issue_reports[0]?.error_type, "wrong-facts");
+    assert.equal(rows.issue_reports[0]?.correction_type, "manual-fix");
+  } finally {
+    cleanup();
+  }
+});
+
+test("logTask accepts omitted minutes", () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  try {
+    const ledger = new Ledger(ledgerPath);
+    ledger.logTask("coding", false, true);
+    ledger.close();
+    const rows = readAllRows(ledgerPath);
+    assert.equal(rows.task_logs[0]?.minutes, null);
+  } finally {
+    cleanup();
+  }
+});
+
+test("consentStatus shows program-terms aggregate item, opt-in sharing, and empty transmission history", () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  try {
+    const ledger = new Ledger(ledgerPath);
+    const status = ledger.consentStatus();
+    ledger.close();
+
+    const aggregate = status.items.find((i) => i.item === "aggregate-measurement");
+    assert.ok(aggregate);
+    assert.equal(aggregate.kind, "program-terms");
+    assert.equal(aggregate.granted, true);
+    const sharing = status.items.find((i) => i.item === "contribution-sharing");
+    assert.ok(sharing);
+    assert.equal(sharing.kind, "opt-in");
+    assert.equal(sharing.granted, false);
+    assert.deepEqual(status.transmissionHistory, []);
+  } finally {
+    cleanup();
+  }
+});
+
+test("concurrent first opens of a fresh ledger all succeed (no migration race)", async () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  try {
+    const ledgerModule = new URL("../src/ledger.ts", import.meta.url).href;
+    const script = `import { Ledger } from ${JSON.stringify(ledgerModule)}; new Ledger(process.argv[1]).close();`;
+    const run = () => promisify(execFile)(process.execPath, [...process.execArgv, "--input-type=module", "-e", script, ledgerPath]);
+    await Promise.all([run(), run(), run(), run()]);
+    const ledger = new Ledger(ledgerPath);
+    ledger.close();
+    assert.equal(readAllRows(ledgerPath).consent_records.length, 1);
+  } finally {
+    cleanup();
+  }
+});
+
+test("ledger directory and file are user-only", { skip: process.platform === "win32" }, () => {
+  const { dir, cleanup } = tempLedgerPath();
+  try {
+    const ledgerPath = `${dir}/nested/ledger.db`;
+    new Ledger(ledgerPath).close();
+    assert.equal(fs.statSync(`${dir}/nested`).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(ledgerPath).mode & 0o777, 0o600);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a server still holding a deleted ledger reopens after another server recreated it", () => {
+  const { ledgerPath, cleanup } = tempLedgerPath();
+  const a = new Ledger(ledgerPath);
+  const b = new Ledger(ledgerPath);
+  try {
+    fs.rmSync(ledgerPath);
+    a.logTask("writing", true, true);
+    b.logTask("coding", false, false);
+    assert.deepEqual(readAllRows(ledgerPath).task_logs.map((r) => r.task_type), ["writing", "coding"]);
+  } finally {
+    a.close();
+    b.close();
+    cleanup();
+  }
+});

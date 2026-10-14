@@ -51,7 +51,7 @@ User device / AI app
 | `consent_status`, `revoke` | Show consent items, periods and transmission history; revoke | Revocation request |
 
 - Local ledger: a single SQLite file on the device, with export and delete commands.
-- Consent model: minimal aggregate items are shown at install as program terms; contribution sharing and any extra measurement are separate opt-in items with scope and expiry.
+- Consent model: minimal aggregate items are stated at install as program terms (P1: in the extension description, with the items themselves shown by `consent_status`); contribution sharing and any extra measurement are separate opt-in items with scope and expiry. Before any transmission is enabled (P3), the install-facing notice must be verified in the actual install screen of each supported app.
 - Contribution scopes: `public` contributions go to the public commons repository. `reviewers-only` contributions go to a private review intake that is not the public repository, to be designed in P2 (issue #4); until that intake exists, only the `public` scope is accepted.
 
 ### 2. Task skill packs
@@ -124,3 +124,4 @@ User device / AI app
 - 2026-10-14: License is CC BY 4.0 for text (skills, prompts, cases, docs) and MIT for code.
 - 2026-10-14: MCP server is TypeScript on the official MCP SDK, shipped as a one-click desktop extension package.
 - 2026-10-14: Minimum cell size for published aggregates is 5.
+- 2026-10-14: P1 states the program terms in the extension description and shows the consent items through `consent_status`, since P1 transmits nothing; a verified install-screen notice is required before P3 enables any transmission.
