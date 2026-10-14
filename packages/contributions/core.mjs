@@ -31,22 +31,40 @@ export function validateContribution(value) {
   const result = Object.fromEntries(FIELDS.map(key => [key, key === 'sources' ? [...value[key]] : value[key]]));
   const serialized = JSON.stringify(result);
   if (serialized.length > 50000) throw new Error('contribution too large');
-  const blocked = scanSafety(serialized);
+  const blocked = [...new Set(Object.values(result).flatMap(field => (Array.isArray(field) ? field : [field]).flatMap(text => scanSafety(text))))];
   if (blocked.length) throw new Error(`unsafe contribution: ${blocked.join(', ')}`);
+  if (result.type === 'skill') {
+    const ko = result.content.match(/^## (?:ko|한국어)\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m);
+    const en = result.content.match(/^## (?:en|English)\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m);
+    if (!ko || !/[가-힣]/.test(ko[1]) || !en || !/[A-Za-z]/.test(en[1])) throw new Error('skill requires Korean and English sections');
+  }
   return result;
 }
 export function contributionPath(candidate) {
   const folder = {prompt:'prompts',skill:'skills','case-success':'cases/success','case-failure':'cases/failure',issue:'issues'}[candidate.type];
   if (!folder || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate.slug)) throw new Error('invalid path');
-  return `commons/${folder}/${candidate.slug}.json`;
+  return candidate.type === 'skill' ? `commons/skills/community/${candidate.slug}/SKILL.md` : `commons/${folder}/${candidate.slug}.json`;
 }
 export async function contentHash(text, crypto = globalThis.crypto) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2,'0')).join('');
 }
+export function renderContribution(candidate) {
+  if (candidate.type !== 'skill') return JSON.stringify(candidate, null, 2) + '\n';
+  const scalar = value => JSON.stringify(value);
+  return [
+    '---', `name: ${candidate.slug}`, `description: ${scalar(candidate.purpose)}`, 'license: CC-BY-4.0',
+    'metadata:', `  purpose: ${scalar(candidate.purpose)}`, `  reference_sources: ${scalar(candidate.sources.join('; '))}`,
+    `  reviewer: ${scalar(candidate.reviewer)}`, `  version: ${candidate.version}`, `  sunset: ${candidate.sunset}`,
+    `  issue_report_path: ${scalar(candidate.issuePath)}`, '  languages: ko,en', `  contributor: ${candidate.contributor}`,
+    '---', '', candidate.content.trim(), '', '## log_task', '',
+    'MCP 서버가 있으면 작업 종료 시 log_task로 작업 유형, 사람 검토 여부, 재사용 여부만 기록합니다. 대화 내용은 기록하지 않습니다. MCP가 없어도 일반 지침으로 사용합니다.',
+    'When the MCP server is available, finish by calling log_task with only task type, human review and reuse flags. Do not include conversation text. Without MCP this skill works as plain instructions.', ''
+  ].join('\n');
+}
 export async function preparePreview(candidate, {crypto = globalThis.crypto} = {}) {
   const validated = validateContribution(candidate);
-  const content = JSON.stringify(validated, null, 2) + '\n';
+  const content = renderContribution(validated);
   return Object.freeze({candidate: validated, content, hash: await contentHash(content, crypto), path: contributionPath(validated), notice:'Public CC BY 4.0 contributions cannot recall existing copies or immutable Git history. Withdrawal removes current project content. Declining has no effect on support.'});
 }
 export function validateConsent({approved,hash,scope,expiresAt}, previewHash, now = Date.now()) {
@@ -57,21 +75,21 @@ export function validateConsent({approved,hash,scope,expiresAt}, previewHash, no
   return {hash,scope,expiresAt:new Date(expiry).toISOString()};
 }
 export function createContributionFlow({transport, now = Date.now, crypto = globalThis.crypto} = {}) {
-  const previews = new Map(), approvals = new Map(), records = new Map();
+  const previews = new Map(), approvals = new Map(), records = new Map(), publishing = new Map();
   return {
     async preview(candidate) {
       const preview = await preparePreview(candidate, {crypto});
       const id = crypto.randomUUID();
-      previews.set(id, {content:preview.content,hash:preview.hash});
+      previews.set(id, {content:preview.content,hash:preview.hash,candidateJSON:JSON.stringify(preview.candidate)});
       return {...preview, id};
     },
     async approve(id, consent) {
       const saved = previews.get(id);
       if (!saved) throw new Error('unknown preview');
-      const {content,hash} = saved;
+      const {content,hash,candidateJSON} = saved;
       const terms = validateConsent(consent, hash, now());
       const token = crypto.randomUUID();
-      approvals.set(token, {id,content,...terms});
+      approvals.set(token, {id,content,candidateJSON,...terms});
       previews.delete(id);
       return {token,...terms};
     },
@@ -80,20 +98,34 @@ export function createContributionFlow({transport, now = Date.now, crypto = glob
       if (!approval) throw new Error('unknown or used approval');
       approvals.delete(token); // Consume before awaiting network, including failures.
       if (Date.parse(approval.expiresAt) <= now()) throw new Error('consent expired');
-      const candidate = validateContribution(JSON.parse(approval.content));
+      const candidate = validateContribution(JSON.parse(approval.candidateJSON));
       if (await contentHash(approval.content, crypto) !== approval.hash) throw new Error('content changed');
       const metadata = {id:approval.id,hash:approval.hash,scope:approval.scope,expiresAt:approval.expiresAt,path:contributionPath(candidate),contributor:candidate.contributor,type:candidate.type,status:'publishing'};
       records.set(metadata.id, metadata);
+      const operation = (async () => {
+        try {
+          const receipt = await transport.publish({candidate,content:approval.content,metadata:{...metadata}});
+          Object.assign(metadata,receipt);
+          if (metadata.status !== 'revocation-requested') metadata.status = 'submitted';
+        } catch (error) {
+          if (metadata.status !== 'revocation-requested') metadata.status = 'publication-uncertain';
+          throw error;
+        }
+      })();
+      publishing.set(metadata.id, operation);
       try {
-        const receipt = await transport.publish({candidate,content:approval.content,metadata:{...metadata}});
-        Object.assign(metadata,{...receipt,status:'submitted'});
+        await operation;
+        if (Date.parse(metadata.expiresAt) <= now() && metadata.status !== 'revocation-requested') await this.revoke(metadata.id);
         return {...metadata};
-      } catch (error) { metadata.status = 'publication-uncertain'; throw error; }
+      } finally { publishing.delete(metadata.id); }
     },
     status() { return [...records.values()].map(item => ({...item})); },
     async revoke(id) {
       const record = records.get(id);
       if (!record) throw new Error('unknown contribution');
+      record.status = 'revocation-requested';
+      const pending = publishing.get(id);
+      if (pending) { try { await pending; } catch { /* Reconcile uncertain publication by deterministic branch. */ } }
       record.status = 'withdrawal-pending';
       const receipt = await transport.revoke({...record});
       Object.assign(record,receipt);

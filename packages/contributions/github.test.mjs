@@ -53,3 +53,23 @@ test('published revocation creates removal PR and remains pending until merge',a
   assert.ok(calls.some(([url,method])=>url.includes('/contents/')&&method==='DELETE'));
   assert.equal(await adapter.isRemoved(record),false);
 });
+test('withdrawal retry completes deletion after branch creation succeeded',async()=>{
+  let branch=false,deleted=false,deleteAttempts=0;
+  const adapter=transport((url,options)=>{
+    if(url.includes('/pulls/1')) return {state:'closed',merged_at:'date'};
+    if(url.includes('/git/ref/heads/contribution/')) return null;
+    if(url.includes('/git/ref/heads/withdrawal/')) return branch?{object:{sha:'branch'}}:null;
+    if(url.endsWith('/git/ref/heads/main')) return {object:{sha:'main'}};
+    if(url.endsWith('/git/refs')&&options.method==='POST') {branch=true;return {};}
+    if(url.includes('/contents/')&&options.method==='DELETE') {deleteAttempts++;if(deleteAttempts===1) throw new Error('injected failure');deleted=true;return {};}
+    if(url.includes('/contents/')&&url.includes('?ref=withdrawal/')) return deleted?null:{sha:'original'};
+    if(url.includes('/contents/')) return {sha:'original'};
+    if(url.includes('/pulls?')) return [];
+    if(url.endsWith('/pulls')) {assert.equal(deleted,true);return {number:2};}
+    return {};
+  });
+  await assert.rejects(adapter.revoke(record),/injected failure/);
+  assert.equal(branch,true);assert.equal(deleted,false);
+  assert.equal((await adapter.revoke(record)).removalPr,2);
+  assert.equal(deleteAttempts,2);
+});
