@@ -52,6 +52,7 @@ User device / AI app
 
 - Local ledger: a single SQLite file on the device, with export and delete commands.
 - Consent model: minimal aggregate items are shown at install as program terms; contribution sharing and any extra measurement are separate opt-in items with scope and expiry.
+- Contribution scopes: `public` contributions go to the public commons repository. `reviewers-only` contributions go to a private review intake that is not the public repository, to be designed in P2 (issue #4); until that intake exists, only the `public` scope is accepted.
 
 ### 2. Task skill packs
 
@@ -66,6 +67,7 @@ User device / AI app
 - Licensing: CC BY 4.0 for text (skills, prompts, cases, docs), MIT for code.
 - CI checks: SKILL.md schema, PII patterns (phone, email, national ID, card numbers), secrets, prompt-injection and remote-execution instructions, link check.
 - Human review per domain via CODEOWNERS, to address malicious or low-quality skills.
+- Reviewers-only intake: contributions scoped `reviewers-only` go to a private review intake, not to this public repository; the intake is designed in P2 (issue #4). Until it exists, only the `public` scope is accepted.
 - Recognition: generated contributor list and per-skill reuse counts (from aggregates). Any material reward is decided by the program operator, not by this project.
 - Mirroring to a public-sector Git platform is a later step that depends on the operator.
 
@@ -118,6 +120,7 @@ User device / AI app
 - 2026-10-14: First pilot is a partner organization's staff AI training, not the voucher program itself.
 - 2026-10-14: Spec only for now; implementation start waits for the owner's go-ahead.
 - 2026-10-14: Owner gave the implementation go-ahead; phases tracked as GitHub issues #2-#7.
+- 2026-10-14: Pilot AI apps are ChatGPT and Claude.
 - 2026-10-14: License is CC BY 4.0 for text (skills, prompts, cases, docs) and MIT for code.
 - 2026-10-14: MCP server is TypeScript on the official MCP SDK, shipped as a one-click desktop extension package.
 - 2026-10-14: Minimum cell size for published aggregates is 5.

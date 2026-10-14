@@ -33,10 +33,10 @@ Contributions must not contain personal data. Phone numbers, email addresses, na
 
 Sharing is a contribution, never a condition:
 
-- Contributing is **opt-in**. Nothing is shared unless you preview and approve it.
-- Each contribution is **scoped** by your choice: `public` (visible to everyone) or `reviewers-only` (visible only to the review team). The `reviewers-only` scope applies only to contributions arriving through the MCP server or the web form; contributions submitted as pull requests to this public repository are public by nature.
+- Contributing is **opt-in**. Nothing is shared unless you preview and approve it. Before you approve a `public` contribution, the preview in the MCP server or web form tells you that the contribution is irrevocable once public (the content license, CC BY 4.0, cannot be recalled).
+- Each contribution is **scoped** by your choice: `public` (visible to everyone) or `reviewers-only` (visible only to the review team). `reviewers-only` contributions go to a private review intake that is not this public repository; that intake is designed in P2 (issue #4), and until it exists only the `public` scope is accepted. Contributions submitted as pull requests to this public repository are public by nature in any case.
 - Each contribution is **time-limited**: you choose the sharing period at approval time.
-- Contributions are **revocable**. You can withdraw any contribution at any time by opening a withdrawal request in this repository (an issue titled `withdraw: <contribution-id>`) or, once it exists, with the `revoke` tool in the MCP server (planned, lands in P2). Withdrawn items are removed from the public commons; copies already incorporated into derived works under the license cannot be recalled, but no new use is published.
+- Contributions can be **withdrawn**. You can withdraw a contribution at any time by opening a withdrawal request in this repository (an issue titled `withdraw: <contribution-id>`) or, once it exists, with the `revoke` tool in the MCP server (planned, lands in P2). Withdrawal removes the item from repository-hosted content and ends future use of it by the project. It does not recall copies already published: CC BY 4.0 is irrevocable, so anything already published stays licensed for whoever already has a copy, including verbatim copies, not only derived works. Git history is not rewritten on withdrawal, except for PII or legal takedown.
 - **Declining to share has no effect on program support.** Whether or not you contribute, you receive the same program services and assistance.
 
 ## Recognition
