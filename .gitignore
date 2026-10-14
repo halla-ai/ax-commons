@@ -1,0 +1,10 @@
+.agenthub/state/
+.agenthub/config.local.json
+.agenthub/routing.local.toml
+
+node_modules/
+dist/
+*.tsbuildinfo
+*.dxt
+*.mcpb
+coverage/
