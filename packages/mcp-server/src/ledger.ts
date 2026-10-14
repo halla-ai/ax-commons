@@ -91,6 +91,9 @@ export class Ledger {
     this.path = path.resolve(dbPath);
     fs.mkdirSync(path.dirname(this.path), { recursive: true });
     this.db = new DatabaseSync(this.path);
+    // Two clients (e.g. Claude Desktop and another app) may run the server at once;
+    // wait for the other writer instead of failing a log with SQLITE_BUSY.
+    this.db.exec("PRAGMA busy_timeout = 5000");
     this.migrate();
   }
 

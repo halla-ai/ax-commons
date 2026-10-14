@@ -17,7 +17,7 @@
     "build": "tsc --noEmit && node scripts/build.mjs",
     "test": "node --test test/*.test.ts",
     "start": "node dist/server.mjs",
-    "pack": "npm run build && npx --yes @anthropic-ai/mcpb pack . ax-commons.mcpb"
+    "pack": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . ax-commons.mcpb"
   },
   "engines": {
     "node": ">=22.13.0"
