@@ -164,6 +164,11 @@ test('monthly admission reserves publication and withdrawal capacity below Conte
     catch (error) { assert.ok(error instanceof MonthCapacityError); rejected = value; break; }
   }
   assert.ok(admitted.length > 0 && rejected);
+  const handler = createReceiver({store, authenticate: async () => ({program_id: program, source_id: rejected.source_id}), now: () => date});
+  const {source_id: privateSource, ...wire} = rejected;
+  const denied = await handler(new Request('https://example.test/v1/metrics', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(wire)}));
+  assert.equal(denied.status, 409);
+  assert.equal((await denied.json()).error, 'month_capacity_reached');
   assert.equal((await store.listSnapshots('2026-10')).length, admitted.length);
   date = new Date('2026-11-08T00:00:00Z');
   const released = await store.putRelease('2026-10');
