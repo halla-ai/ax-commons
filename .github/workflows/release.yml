@@ -54,9 +54,12 @@ jobs:
           current="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
           test "$current" = "$SOURCE_SHA"
           tag="v$(node -p "JSON.parse(require('fs').readFileSync('package.json')).version")"
-          if gh release view "$tag" >/dev/null 2>&1; then
+          if git ls-remote --exit-code origin "refs/tags/$tag" > "$RUNNER_TEMP/release-tag"; then
             git fetch origin "refs/tags/$tag:refs/tags/$tag"
             test "$(git rev-parse "$tag^{commit}")" = "$SOURCE_SHA"
+          else
+            status=$?
+            test "$status" = 2
           fi
       - name: Deploy reviewed source
         env:
