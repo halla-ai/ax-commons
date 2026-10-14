@@ -31,7 +31,7 @@ Apply [measurement definitions and suppression](measurement-plan.md) before fill
 
 ## Findings and follow-up / 발견사항과 후속 조치
 
-- Installation or workflow failure categories / 설치·흐름 실패 분류: [pending, no identifying narrative]
+- Installation or workflow failure categories / 설치·흐름 실패 분류: [pending, suppressed aggregate counts per category only; no narrative]
 - Human review and reuse observations / 사람 검토·재사용 관찰: [pending, suppressed aggregates only]
 - Technical checks versus observed participant behavior / 기술 검사와 참가자 관찰 구분: [pending]
 - Data not observed and reasons / 미관찰 항목과 이유: [pending]
