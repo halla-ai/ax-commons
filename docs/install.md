@@ -22,12 +22,12 @@ The AX Commons extension is a small program that runs only on your computer. It 
 
 ## Step 2: what you are agreeing to
 
-At install, the extension shows its consent items. They mean:
+The extension keeps two consent items on your device. The install dialog does not list them; ask Claude "show my ax-commons consent status" at any time to see them. They mean:
 
 - **Aggregate measurement (program terms)**: counting tasks by type, review, and reuse is part of the program you joined. In this version the counts stay on your device; a later version sends only counts, never text, and only after the program tells you. Every send is listed in the extension's transmission history.
 - **Contribution sharing (separate opt-in, not yet active)**: sharing a prompt, skill, or case with the commons is your choice, item by item, with a preview, a scope, and a time limit. It arrives in a later version. Saying no changes nothing about the support you receive.
 
-You can ask the AI at any time: "show my ax-commons consent status" to see these items and the (empty) transmission history.
+The same request also shows the transmission history, which is empty in this version.
 
 ## Step 3: use it
 
@@ -41,7 +41,7 @@ The ledger is one file on your computer:
 - Windows: `%APPDATA%\ax-commons\ledger.db`
 - Linux: `~/.local/share/ax-commons/ledger.db`
 
-**To delete everything**, quit Claude Desktop first, then delete that file (on macOS: in Finder, choose Go > Go to Folder and paste the path; delete `ledger.db`). That is the whole delete operation; nothing is stored elsewhere. Removing the extension from Claude Desktop stops further logging.
+**To delete everything**, quit Claude Desktop first, then delete that file (on macOS: in Finder, choose Go > Go to Folder and paste the path; delete `ledger.db`). That is the whole delete operation; nothing is stored elsewhere. Removing the extension from Claude Desktop stops further logging but does not delete the ledger.
 
 **To export a readable copy** (JSON, opens in any text editor), you need Node.js 22.13 or newer installed on your computer (download from https://nodejs.org). Claude Desktop's built-in runtime cannot be used from Terminal.
 
