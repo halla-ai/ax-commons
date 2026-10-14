@@ -4,7 +4,7 @@
   "display_name": "AX Commons",
   "version": "0.2.1",
   "description": "Local AI activity records, approved contributions and monthly aggregate sharing with small cells suppressed.",
-  "long_description": "\ub300\ud654 \ub0b4\uc6a9\uc740 \uc218\uc9d1\ud558\uac70\ub098 \uc6d0\uc7a5\uc5d0 \uc800\uc7a5\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. \uc791\uc5c5 \uc720\ud615\u00b7\uc0ac\ub78c \uac80\ud1a0\u00b7\uc7ac\uc0ac\uc6a9\u00b7\uc120\ud0dd\ud55c \uc2a4\ud0ac\uc758 \ud69f\uc218\ub9cc \uae30\ub85d\ud558\uba70, 5\uac74 \ubbf8\ub9cc \uc140\uc740 \uc804\uc1a1\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. \uc9d1\uacc4 \uc804\uc1a1\uc740 \uc6b4\uc601\uc790 \uc124\uc815\uacfc \uba85\uc2dc\uc801 \uc2b9\uc778 \ud6c4\uc5d0\ub9cc \uc774\ub8e8\uc5b4\uc9d1\ub2c8\ub2e4. \uae30\uc5ec \uacf5\uc720\ub294 \ubcc4\ub3c4 \uc120\ud0dd \uc0ac\ud56d\uc774\uba70, \uc815\ud655\ud55c \ub0b4\uc6a9 \ubbf8\ub9ac\ubcf4\uae30\u00b7\uacf5\uac1c \ubc94\uc704\u00b790\uc77c \uc774\ub0b4 \ub9cc\ub8cc\u00b7\uc2b9\uc778\uc744 \uac70\uccd0 \uc81c\ucd9c\ud569\ub2c8\ub2e4. \uacf5\uc720\ub97c \uac70\uc808\ud574\ub3c4 \uc9c0\uc6d0\uc5d0 \uc601\ud5a5\uc774 \uc5c6\uc2b5\ub2c8\ub2e4. \ucca0\ud68c\ub294 \ud604\uc7ac \uc790\ub8cc\uc758 \uc0ad\uc81c \uc808\ucc28\uc774\uba70, \uc774\ubbf8 \ubc30\ud3ec\ub41c \uacf5\uac1c \uc0ac\ubcf8\uacfc Git \uc774\ub825\uc740 \ud68c\uc218\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4. Configuration never sends data automatically. Monthly aggregate measurements are program terms; contributions require separate exact-content public approval and expiry. Local export omits withdrawal credentials. Local deletion does not withdraw remote contributions; use revoke first.",
+  "long_description": "대화 내용은 수집하거나 원장에 저장하지 않습니다. 작업 유형·사람 검토·재사용·선택한 스킬의 횟수만 기록하며, 5건 미만 셀은 전송하지 않습니다. 집계 전송은 운영자 설정과 명시적 승인 후에만 이루어집니다. 기여 공유는 별도 선택 사항이며, 정확한 내용 미리보기·공개 범위·90일 이내 만료·승인을 거쳐 제출합니다. 공유를 거절해도 지원에 영향이 없습니다. 철회는 현재 자료의 삭제 절차이며, 이미 배포된 공개 사본과 Git 이력은 회수할 수 없습니다. Configuration never sends data automatically. Monthly aggregate measurements are program terms; contributions require separate exact-content public approval and expiry. Local export omits withdrawal credentials. Local deletion does not withdraw remote contributions; use revoke first.",
   "author": {
     "name": "Cheju Halla University ax-commons contributors",
     "url": "https://github.com/halla-ai/ax-commons"
@@ -82,30 +82,30 @@
   "user_config": {
     "endpoint": {
       "type": "string",
-      "title": "\uc6b4\uc601 \uc11c\ube44\uc2a4 / Operator service",
-      "description": "\uc6b4\uc601\uc790\uac00 \uc548\ub0b4\ud55c HTTPS \uc8fc\uc18c. \uc124\uc815\ub9cc\uc73c\ub85c \uc804\uc1a1\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. / Configuration never sends data automatically.",
+      "title": "운영 서비스 / Operator service",
+      "description": "운영자가 안내한 HTTPS 주소. 설정만으로 전송하지 않습니다. / Configuration never sends data automatically.",
       "default": "https://ax-commons.halla.ai",
       "required": false
     },
     "program_id": {
       "type": "string",
-      "title": "\uc0ac\uc5c5 \ucf54\ub4dc / Program pseudonym",
-      "description": "\uc6b4\uc601\uc790\uac00 \ubc1c\uae09\ud55c \uac00\uba85 \ucf54\ub4dc. \uc774\ub984\uc774\ub098 \uc774\uba54\uc77c\uc744 \uc785\ub825\ud558\uc9c0 \ub9c8\uc138\uc694.",
+      "title": "사업 코드 / Program pseudonym",
+      "description": "운영자가 발급한 가명 코드. 이름이나 이메일을 입력하지 마세요.",
       "default": "",
       "required": false
     },
     "metrics_token": {
       "type": "string",
-      "title": "\uc9d1\uacc4 \uc811\uadfc \ucf54\ub4dc / Measurement code",
-      "description": "\uc6b4\uc601\uc790\uac00 \ubc1c\uae09\ud55c \uae30\uae30\ubcc4 \uc811\uadfc \ucf54\ub4dc. \uba85\uc2dc\uc801 \uc2b9\uc778 \ud6c4\uc5d0\ub9cc \uc9d1\uacc4\ub97c \uc804\uc1a1\ud569\ub2c8\ub2e4.",
+      "title": "집계 접근 코드 / Measurement code",
+      "description": "운영자가 발급한 기기별 접근 코드. 명시적 승인 후에만 집계를 전송합니다.",
       "default": "",
       "sensitive": true,
       "required": false
     },
     "contribution_token": {
       "type": "string",
-      "title": "\uae30\uc5ec \ucc38\uc5ec \ucf54\ub4dc / Contribution code",
-      "description": "\uc120\ud0dd\uc801 \uae30\uc5ec \uc81c\ucd9c\uc6a9 \ucf54\ub4dc. \uacf5\uc720\ub97c \uac70\uc808\ud574\ub3c4 \uc9c0\uc6d0\uc5d0 \uc601\ud5a5\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.",
+      "title": "기여 참여 코드 / Contribution code",
+      "description": "선택적 기여 제출용 코드. 공유를 거절해도 지원에 영향이 없습니다.",
       "default": "",
       "sensitive": true,
       "required": false
