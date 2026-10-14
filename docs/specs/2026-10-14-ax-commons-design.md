@@ -51,7 +51,7 @@ User device / AI app
 | `consent_status`, `revoke` | Show consent items, periods and transmission history; revoke | Revocation request |
 
 - Local ledger: a single SQLite file on the device, with export and delete commands.
-- Consent model: minimal aggregate items are shown at install as program terms; contribution sharing and any extra measurement are separate opt-in items with scope and expiry.
+- Consent model: minimal aggregate items are stated at install as program terms (P1: in the extension description, with the items themselves shown by `consent_status`); contribution sharing and any extra measurement are separate opt-in items with scope and expiry. Before any transmission is enabled (P3), the install-facing notice must be verified in the actual install screen of each supported app.
 - Contribution scopes: `public` contributions go to the public commons repository. `reviewers-only` contributions go to a private review intake that is not the public repository, to be designed in P2 (issue #4); until that intake exists, only the `public` scope is accepted.
 
 ### 2. Task skill packs
@@ -132,3 +132,4 @@ User device / AI app
 - 2026-10-14: MCP server is TypeScript on the official MCP SDK, shipped as a one-click desktop extension package.
 - 2026-10-14: Minimum cell size for published aggregates is 5.
 - 2026-10-14: P3 implementation uses authenticated monthly replacement snapshots and immutable closed-month releases; per-source identity is derived privately from random transport credentials, so wire payloads contain only program pseudonyms and enumerated aggregate counts.
+- 2026-10-14: P1 states program terms in the extension description and shows consent through `consent_status`. The owner subsequently authorized implementation and deployment before real-user checks. The integration supplies an install-facing notice and optional configuration fields in the manifest; native screen verification and pilot measurements remain deferred until after deployment. Each transmission still requires explicit approval.

@@ -22,7 +22,7 @@ The AX Commons extension is a small program that runs only on your computer. It 
 
 ## Step 2: what you are agreeing to
 
-The extension keeps two consent items on your device. The install dialog does not list them; ask Claude "show my ax-commons consent status" at any time to see them. They mean:
+The extension keeps two consent items on your device. Its description, shown when you install it, states the terms below; to see the items themselves at any time, ask Claude "show my ax-commons consent status". They mean:
 
 - **Aggregate measurement (program terms)**: counting tasks by type, review, and reuse is part of the program you joined. In this version the counts stay on your device; a later version sends only counts, never text, and only after the program tells you. Every send is listed in the extension's transmission history.
 - **Contribution sharing (separate opt-in, not yet active)**: sharing a prompt, skill, or case with the commons is your choice, item by item, with a preview, a scope, and a time limit. It arrives in a later version. Saying no changes nothing about the support you receive.
