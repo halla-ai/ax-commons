@@ -4,12 +4,12 @@ import {createHash} from 'node:crypto';
 import {GithubStore} from '../src/github-store.mjs';
 import {createVercelReceiver} from '../src/vercel.mjs';
 function github(privateRepo = true) {
-  const files = new Map(); let sequence = 0, forceConflict = false, pauseWrite = null;
+  const files = new Map(); let sequence = 0, forceConflict = false, pauseWrite = null, customTree = null;
   const response = (value, status = 200) => new Response(JSON.stringify(value), {status});
   const fetch = async (url, options = {}) => {
     const path = new URL(url).pathname.replace('/repos/test/state', '');
     if (path === '') return response({private: privateRepo});
-    if (path === '/git/trees/HEAD') return response({tree: [...files.keys()].map(path => ({type: 'blob', path})), truncated: false});
+    if (path === '/git/trees/HEAD') return response(customTree ?? {tree: [...files.keys()].map(path => ({type: 'blob', path})), truncated: false});
     const file = path.replace('/contents/', '');
     if (options.method === 'PUT' && pauseWrite) { const pause = pauseWrite; pauseWrite = null; await pause(); }
     const existing = files.get(file);
@@ -24,7 +24,7 @@ function github(privateRepo = true) {
     if (body.sha !== existing.sha) return response({}, 409);
     files.delete(file); return response({});
   };
-  return {fetch, files, makePublic: () => { privateRepo = false; }, pause: fn => { pauseWrite = fn; }, conflict: () => { forceConflict = true; }};
+  return {fetch, files, setTree: tree => { customTree = tree; }, makePublic: () => { privateRepo = false; }, pause: fn => { pauseWrite = fn; }, conflict: () => { forceConflict = true; }};
 }
 const program = 'a'.repeat(32), token = 'b'.repeat(64), source_id = createHash('sha256').update(token).digest('hex');
 const cell = {task_type: 'writing', human_reviewed: true, reused: false, skill_id: null, count: 5};
@@ -99,4 +99,19 @@ test('release recomputes from latest snapshot and visibility flips fail closed',
   assert.equal(release.programs[0].cells[0].count, 9);
   service.makePublic(); await assert.rejects(store.getRelease('2026-10'));
   await assert.rejects(store.revoke(snapshot));
+});
+
+test('consent listing returns private metadata and ignores malformed paths', async () => {
+  const service = github(), store = new GithubStore({token: 'test-only', repo: 'test/state', fetch: service.fetch});
+  const path = `consents/${'a'.repeat(32)}.json`, value = {id: 'a'.repeat(32), status: 'approved', expires_at: '2026-11-01'};
+  await store.putJson(path, value, {createOnly: true});
+  service.setTree({truncated: false, tree: [{type: 'blob', path}, {type: 'blob', path: 'consents/../../private.json'}, {type: 'blob', path: 'consents/person-name.json'}, {type: 'tree', path: `consents/${'b'.repeat(32)}.json`}, {type: 'blob', path: 'months/2026-10.json'}, null]});
+  assert.deepEqual(await store.listConsents(), [value]);
+  service.makePublic(); await assert.rejects(store.listConsents());
+});
+test('consent listing rejects truncated or oversized trees and record overflow', async () => {
+  const service = github(), store = new GithubStore({token: 'test-only', repo: 'test/state', fetch: service.fetch});
+  for (const tree of [{truncated: true, tree: []}, {tree: []}, {truncated: false, tree: Array(10001).fill(null)}, {truncated: false, tree: Array.from({length: 1001}, (_, index) => ({type: 'blob', path: `consents/${index.toString(16).padStart(32, '0')}.json`}))}]) {
+    service.setTree(tree); await assert.rejects(store.listConsents());
+  }
 });

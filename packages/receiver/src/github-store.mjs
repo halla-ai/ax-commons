@@ -45,6 +45,28 @@ export class GithubStore {
     if (response.status === 409 || response.status === 422) throw new StorageConflict('Concurrent state update');
     if (!response.ok) throw new Error('Private storage deletion failed');
   }
+  async listConsents() {
+    await this.checkPrivate();
+    const response = await this.call('/git/trees/HEAD?recursive=1');
+    if (!response.ok) throw new Error('Private consent listing unavailable');
+    const tree = await response.json();
+    if (tree.truncated !== false || !Array.isArray(tree.tree) || tree.tree.length > 10000) throw new Error('Private consent listing incomplete');
+    const paths = new Set();
+    for (const entry of tree.tree) {
+      if (entry?.type === 'blob' && typeof entry.path === 'string' && /^consents\/[a-f0-9]{32,64}\.json$/.test(entry.path)) paths.add(entry.path);
+    }
+    if (paths.size > 1000) throw new Error('Private consent listing limit exceeded');
+    const values = [];
+    for (const path of [...paths].sort()) {
+      // Fresh visibility check on each read, including after tree enumeration.
+      const row = await this.getJson(path);
+      if (row) {
+        if (!row.value || typeof row.value !== 'object' || Array.isArray(row.value)) throw new Error('Invalid private consent metadata');
+        values.push(row.value);
+      }
+    }
+    return values;
+  }
   async readMonth(period) {
     const row = await this.getJson(`months/${period}.json`);
     const state = row?.value ?? {snapshots: [], release: null};
