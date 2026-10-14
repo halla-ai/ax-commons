@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { Ledger, MAX_SHORT_TEXT } from "../src/ledger.ts";
+import { CORRECTION_TYPES, ERROR_TYPES, INTENT_REASONS, Ledger, TASK_TYPES } from "../src/ledger.ts";
 import { createServer } from "../src/server.ts";
 import { ledgerContains, readAllRows, tempLedgerPath } from "./helpers.ts";
 
@@ -13,7 +13,7 @@ const SENTINEL_MARKER = "SENTINEL-CONVERSATION-7f3a9b2e";
 const SENTINEL =
   `${SENTINEL_MARKER}: user said "please rewrite my resignation letter because my manager ` +
   `yelled at me yesterday" and the assistant replied "I am sorry to hear that, here is a draft". ` +
-  "x".repeat(MAX_SHORT_TEXT);
+  "short enough to fit any length cap";
 
 async function withClient(
   ledgerPath: string,
@@ -44,7 +44,7 @@ test("AC2: the sentinel conversation string never reaches the ledger or any tool
     const outputs = await withClient(ledgerPath, async (client) => {
       const seen: string[] = [];
       const attempts = [
-        { name: "declare_intent", arguments: { work_summary: SENTINEL, reason: SENTINEL } },
+        { name: "declare_intent", arguments: { work_type: SENTINEL, reason: SENTINEL } },
         { name: "log_task", arguments: { task_type: SENTINEL, human_reviewed: true, reused: true, minutes: 5 } },
         { name: "report_issue", arguments: { error_type: SENTINEL, correction_type: SENTINEL } },
         // Unknown extra fields must never be stored either.
@@ -78,7 +78,7 @@ test("AC2: a ledger filled through the whole tool surface contains only structur
   const { ledgerPath, cleanup } = tempLedgerPath();
   try {
     await withClient(ledgerPath, async (client) => {
-      await client.callTool({ name: "declare_intent", arguments: { work_summary: "grant report", reason: "deadline friday" } });
+      await client.callTool({ name: "declare_intent", arguments: { work_type: "writing", reason: "save-time" } });
       await client.callTool({ name: "log_task", arguments: { task_type: "writing", human_reviewed: true, reused: true, minutes: 30 } });
       await client.callTool({ name: "report_issue", arguments: { error_type: "format", correction_type: "retry" } });
       await client.callTool({ name: "consent_status", arguments: {} });
@@ -87,7 +87,7 @@ test("AC2: a ledger filled through the whole tool surface contains only structur
 
     const rows = readAllRows(ledgerPath);
     for (const row of rows.intents) {
-      assert.deepEqual(Object.keys(row).sort(), ["created_at", "id", "reason", "work_summary"]);
+      assert.deepEqual(Object.keys(row).sort(), ["created_at", "id", "reason", "work_type"]);
     }
     for (const row of rows.task_logs) {
       assert.deepEqual(Object.keys(row).sort(), ["created_at", "human_reviewed", "id", "minutes", "reused", "task_type"]);
@@ -96,12 +96,13 @@ test("AC2: a ledger filled through the whole tool surface contains only structur
       assert.deepEqual(Object.keys(row).sort(), ["correction_type", "created_at", "error_type", "id"]);
     }
     // Timestamps and ids aside, every stored value must be an enum member,
-    // a boolean flag, a bounded number, or a capped short string.
+    // a boolean flag or a bounded number.
+    const allowed = new Set<string>([...TASK_TYPES, ...INTENT_REASONS, ...ERROR_TYPES, ...CORRECTION_TYPES]);
     for (const row of [...rows.intents, ...rows.task_logs, ...rows.issue_reports]) {
       for (const [key, value] of Object.entries(row)) {
         if (key === "id" || key === "created_at") continue;
         if (typeof value === "string") {
-          assert.ok(value.length <= MAX_SHORT_TEXT, `stored string in ${key} exceeds the cap`);
+          assert.ok(allowed.has(value), `stored string in ${key} is not an enum member`);
         } else {
           assert.ok(typeof value === "number" || value === null, `unexpected stored type in ${key}`);
         }
@@ -119,14 +120,11 @@ test("AC2: no tool input schema exposes a free-text content field", async () => 
       const { tools } = await client.listTools();
       const bannedFieldNames = /text|content|transcript|conversation|message|prompt|notes?|detail|body|free/i;
       for (const tool of tools) {
-        const properties = (tool.inputSchema.properties ?? {}) as Record<string, { type?: string; enum?: unknown[]; maxLength?: number }>;
+        const properties = (tool.inputSchema.properties ?? {}) as Record<string, { type?: string; enum?: unknown[] }>;
         for (const [field, schema] of Object.entries(properties)) {
           assert.ok(!bannedFieldNames.test(field), `${tool.name}.${field} looks like a free-text field`);
-          if (schema.type === "string" && !schema.enum) {
-            assert.ok(
-              typeof schema.maxLength === "number" && schema.maxLength <= MAX_SHORT_TEXT,
-              `${tool.name}.${field} is an unbounded string`,
-            );
+          if (schema.type === "string") {
+            assert.ok(Array.isArray(schema.enum), `${tool.name}.${field} accepts free text`);
           }
         }
       }

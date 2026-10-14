@@ -1,10 +1,10 @@
 import { z } from "zod";
 import type { Ledger } from "./ledger.ts";
-import { CORRECTION_TYPES, ERROR_TYPES, MAX_MINUTES, MAX_SHORT_TEXT, TASK_TYPES } from "./ledger.ts";
+import { CORRECTION_TYPES, ERROR_TYPES, INTENT_REASONS, MAX_MINUTES, TASK_TYPES } from "./ledger.ts";
 
-// Every tool input is a short structured value: a fixed enum member, a boolean,
-// a bounded integer, or a capped string. There is intentionally no field that
-// accepts free-form conversation text.
+// Every tool input is a fixed enum member, a boolean or a bounded integer.
+// There is intentionally no string field a client could copy conversation
+// text into, so the no-conversation-text invariant is enforced, not requested.
 //
 // Enum schemas carry an error map that never echoes the received value:
 // the default zod message embeds it, which would put rejected free text into
@@ -18,16 +18,8 @@ function fixedEnum<T extends readonly [string, ...string[]]>(values: T, label: s
 export const toolInputSchemas = {
   declare_intent: z
     .object({
-      work_summary: z
-        .string()
-        .min(1)
-        .max(MAX_SHORT_TEXT)
-        .describe(`Short label for the one piece of work to change with AI (max ${MAX_SHORT_TEXT} chars, not conversation text)`),
-      reason: z
-        .string()
-        .min(1)
-        .max(MAX_SHORT_TEXT)
-        .describe(`Short label for why this work matters (max ${MAX_SHORT_TEXT} chars, not conversation text)`),
+      work_type: fixedEnum(TASK_TYPES, "work_type").describe("Category of the one piece of work to change with AI"),
+      reason: fixedEnum(INTENT_REASONS, "reason").describe("Why this work should change"),
     })
     .strict(),
   log_task: z
@@ -51,8 +43,8 @@ export type ToolName = keyof typeof toolInputSchemas;
 
 export const toolDescriptions: Record<ToolName, string> = {
   declare_intent:
-    "Record the one piece of work the user wants to change with AI, and why. " +
-    "Both fields are short structured labels, never conversation text. Stored only on this device.",
+    "Record the one piece of work the user wants to change with AI, and why, as two fixed categories " +
+    "(work type and reason). Stored only on this device.",
   log_task:
     "Record a completed AI task: fixed task-type tag, whether a human reviewed the output, " +
     "whether the output was reused, and an optional time estimate. Called at the end of a skill. Stored only on this device.",
@@ -85,7 +77,7 @@ export function createToolHandlers(ledger: Ledger): Record<ToolName, ToolHandler
   return {
     declare_intent: (args) => {
       const input = parse("declare_intent", args);
-      const intentId = ledger.declareIntent(input.work_summary, input.reason);
+      const intentId = ledger.declareIntent(input.work_type, input.reason);
       return { recorded: true, intentId, stored: "on-device ledger only" };
     },
     log_task: (args) => {

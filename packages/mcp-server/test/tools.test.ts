@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { Ledger, CORRECTION_TYPES, ERROR_TYPES, MAX_MINUTES, MAX_SHORT_TEXT, TASK_TYPES } from "../src/ledger.ts";
+import { deleteLedger, Ledger, CORRECTION_TYPES, ERROR_TYPES, INTENT_REASONS, MAX_MINUTES, TASK_TYPES } from "../src/ledger.ts";
 import { createServer } from "../src/server.ts";
 import { createToolHandlers, toolInputSchemas } from "../src/tools.ts";
 import { readAllRows, tempLedgerPath } from "./helpers.ts";
@@ -20,23 +20,25 @@ function withHandlers(fn: (handlers: ReturnType<typeof createToolHandlers>, ledg
 
 test("declare_intent records valid input", () => {
   withHandlers((handlers, ledgerPath) => {
-    const out = handlers.declare_intent({ work_summary: "weekly newsletter", reason: "save drafting time" });
-    assert.equal(out.recorded, true);
+    for (const reason of INTENT_REASONS) {
+      const out = handlers.declare_intent({ work_type: "writing", reason });
+      assert.equal(out.recorded, true);
+    }
     const rows = readAllRows(ledgerPath);
-    assert.equal(rows.intents[0]?.work_summary, "weekly newsletter");
+    assert.equal(rows.intents.length, INTENT_REASONS.length);
+    assert.equal(rows.intents[0]?.work_type, "writing");
   });
 });
 
-// AC2 boundary, stated explicitly: declare_intent labels are user-written and
-// stored as given up to the cap. The no-conversation-text guarantee covers the
-// enum/boolean/integer fields and the no-echo of rejected values, not this label.
-test("declare_intent stores a label up to the cap verbatim", () => {
+test("a ledger deleted while the server runs is recreated on the next write", () => {
   withHandlers((handlers, ledgerPath) => {
-    const label = "y".repeat(MAX_SHORT_TEXT);
-    handlers.declare_intent({ work_summary: label, reason: label });
+    handlers.log_task({ task_type: "coding", human_reviewed: true, reused: true });
+    assert.equal(deleteLedger(ledgerPath), true);
+    const out = handlers.log_task({ task_type: "data", human_reviewed: false, reused: false });
+    assert.equal(out.recorded, true);
     const rows = readAllRows(ledgerPath);
-    assert.equal(rows.intents[0]?.work_summary, label);
-    assert.equal(rows.intents[0]?.reason, label);
+    assert.equal(rows.task_logs.length, 1);
+    assert.equal(rows.task_logs[0]?.task_type, "data");
   });
 });
 
@@ -68,26 +70,14 @@ test("consent_status returns items and empty transmission history", () => {
   });
 });
 
-test("string fields reject values over the length cap", () => {
-  withHandlers((handlers) => {
-    const tooLong = "x".repeat(MAX_SHORT_TEXT + 1);
-    assert.throws(() => handlers.declare_intent({ work_summary: tooLong, reason: "ok" }), /Invalid declare_intent/);
-    assert.throws(() => handlers.declare_intent({ work_summary: "ok", reason: tooLong }), /Invalid declare_intent/);
-  });
-});
-
-test("string fields reject empty values and non-strings", () => {
-  withHandlers((handlers) => {
-    assert.throws(() => handlers.declare_intent({ work_summary: "", reason: "ok" }));
-    assert.throws(() => handlers.declare_intent({ work_summary: 42, reason: "ok" }));
-  });
-});
-
 test("enum fields reject unknown values", () => {
   withHandlers((handlers) => {
     assert.throws(() => handlers.log_task({ task_type: "chatting", human_reviewed: true, reused: false }));
     assert.throws(() => handlers.report_issue({ error_type: "hallucination", correction_type: "manual-fix" }));
     assert.throws(() => handlers.report_issue({ error_type: "wrong-facts", correction_type: "ignored" }));
+    assert.throws(() => handlers.declare_intent({ work_type: "weekly newsletter", reason: "save-time" }), /Invalid declare_intent/);
+    assert.throws(() => handlers.declare_intent({ work_type: "writing", reason: "save drafting time" }), /Invalid declare_intent/);
+    assert.throws(() => handlers.declare_intent({ work_type: 42, reason: "save-time" }));
   });
 });
 
@@ -111,7 +101,7 @@ test("unexpected extra fields are rejected (strict objects)", () => {
 
 test("missing required fields are rejected", () => {
   withHandlers((handlers) => {
-    assert.throws(() => handlers.declare_intent({ work_summary: "only one field" }));
+    assert.throws(() => handlers.declare_intent({ work_type: "writing" }));
     assert.throws(() => handlers.log_task({ task_type: "coding" }));
     assert.throws(() => handlers.report_issue({}));
   });
@@ -119,7 +109,7 @@ test("missing required fields are rejected", () => {
 
 test("tool surface is exactly the four P1 tools with allowlisted fields", () => {
   assert.deepEqual(Object.keys(toolInputSchemas).sort(), ["consent_status", "declare_intent", "log_task", "report_issue"]);
-  assert.deepEqual(Object.keys(toolInputSchemas.declare_intent.shape).sort(), ["reason", "work_summary"]);
+  assert.deepEqual(Object.keys(toolInputSchemas.declare_intent.shape).sort(), ["reason", "work_type"]);
   assert.deepEqual(Object.keys(toolInputSchemas.log_task.shape).sort(), ["human_reviewed", "minutes", "reused", "task_type"]);
   assert.deepEqual(Object.keys(toolInputSchemas.report_issue.shape).sort(), ["correction_type", "error_type"]);
   assert.deepEqual(Object.keys(toolInputSchemas.consent_status.shape), []);
@@ -136,7 +126,7 @@ test("MCP protocol: tools/list advertises only the allowlisted fields, and a cal
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), ["consent_status", "declare_intent", "log_task", "report_issue"]);
     const declared: Record<string, string[]> = {
-      declare_intent: ["reason", "work_summary"],
+      declare_intent: ["reason", "work_type"],
       log_task: ["human_reviewed", "minutes", "reused", "task_type"],
       report_issue: ["correction_type", "error_type"],
       consent_status: [],

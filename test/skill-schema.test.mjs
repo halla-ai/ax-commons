@@ -102,6 +102,28 @@ test("AC4: a missing log_task step fails", () => {
   }
 });
 
+test("AC4: log_task mentioned only before the last section fails", () => {
+  const body = "## Intro\nThis skill ends with log_task.\n\n## Procedure\nDo the task and stop.";
+  const { file, cleanup } = writeFixture("fixture-skill", VALID_FRONTMATTER, body);
+  try {
+    const errors = validateSkillFile(file);
+    assert.ok(errors.some((e) => e.includes("log_task")), `expected a log_task error, got: ${errors.join("; ")}`);
+  } finally {
+    cleanup();
+  }
+});
+
+test("AC4: an unsupported language in the list fails", () => {
+  const broken = VALID_FRONTMATTER.replace('languages: "ko,en"', 'languages: "ko,en,fr"');
+  const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);
+  try {
+    const errors = validateSkillFile(file);
+    assert.ok(errors.some((e) => e.includes("languages")), `expected a languages error, got: ${errors.join("; ")}`);
+  } finally {
+    cleanup();
+  }
+});
+
 test("AC4: a non-semver version fails", () => {
   const broken = VALID_FRONTMATTER.replace('version: "1.0.0"', 'version: "v1"');
   const { file, cleanup } = writeFixture("fixture-skill", broken, VALID_BODY);

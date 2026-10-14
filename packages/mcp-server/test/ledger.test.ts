@@ -38,7 +38,7 @@ test("declareIntent, logTask and reportIssue persist structured rows", () => {
   const { ledgerPath, cleanup } = tempLedgerPath();
   try {
     const ledger = new Ledger(ledgerPath);
-    const intentId = ledger.declareIntent("monthly sales report", "cut drafting time");
+    const intentId = ledger.declareIntent("data", "save-time");
     const taskLogId = ledger.logTask("document-summary", true, false, 25);
     const issueId = ledger.reportIssue("wrong-facts", "manual-fix");
     ledger.close();
@@ -46,8 +46,8 @@ test("declareIntent, logTask and reportIssue persist structured rows", () => {
     assert.ok(intentId >= 1 && taskLogId >= 1 && issueId >= 1);
     const rows = readAllRows(ledgerPath);
     assert.equal(rows.intents.length, 1);
-    assert.equal(rows.intents[0]?.work_summary, "monthly sales report");
-    assert.equal(rows.intents[0]?.reason, "cut drafting time");
+    assert.equal(rows.intents[0]?.work_type, "data");
+    assert.equal(rows.intents[0]?.reason, "save-time");
     assert.equal(rows.task_logs.length, 1);
     assert.equal(rows.task_logs[0]?.task_type, "document-summary");
     assert.equal(rows.task_logs[0]?.human_reviewed, 1);
