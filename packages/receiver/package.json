@@ -1,0 +1,1 @@
+{"name":"@ax-commons/receiver","version":"0.1.0","private":true,"type":"module","engines":{"node":">=22.13"},"scripts":{"test":"node --test test/*.test.mjs","build":"node --check src/core.mjs && node --check src/sqlite.mjs"}}
