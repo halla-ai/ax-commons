@@ -7,6 +7,7 @@
   <title>AX Commons | 집계 현황</title>
   <link rel="preload" href="/scene-oreum.webp" as="image" type="image/webp">
   <link rel="stylesheet" href="/style.css">
+  <script src="/theme.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#content" data-i18n="skip">본문으로 이동</a>
@@ -21,6 +22,11 @@
       <a href="/?lang=ko" lang="ko" hreflang="ko" data-language="ko" aria-current="true">한국어</a>
       <a href="/?lang=en" lang="en" hreflang="en" data-language="en">English</a>
     </nav>
+    <div class="theme-switch" role="group" aria-label="화면 모드" data-label="theme" hidden>
+      <button type="button" data-theme-choice="system" data-i18n="themeSystem" aria-pressed="true">시스템</button>
+      <button type="button" data-theme-choice="light" data-i18n="themeLight" aria-pressed="false">라이트</button>
+      <button type="button" data-theme-choice="dark" data-i18n="themeDark" aria-pressed="false">다크</button>
+    </div>
   </header>
   <main id="content">
     <section class="hero" aria-labelledby="heading">

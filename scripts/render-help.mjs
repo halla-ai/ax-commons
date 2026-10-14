@@ -8,6 +8,11 @@ function link({label, href}) {
   return '<a href="' + escapeHtml(href) + '">' + escapeHtml(label) + '</a>';
 }
 function steps(items) { return '<ol>' + items.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>'; }
+export function themeSwitch(en) {
+  const labels = en ? ['Color theme', 'System', 'Light', 'Dark'] : ['화면 모드', '시스템', '라이트', '다크'];
+  return '<div class="theme-switch" role="group" aria-label="' + labels[0] + '" hidden>' +
+    ['system', 'light', 'dark'].map((choice, index) => '<button type="button" data-theme-choice="' + choice + '" aria-pressed="' + (choice === 'system') + '">' + labels[index + 1] + '</button>').join('') + '</div>';
+}
 export function renderHelp(language, content = helpContent[language]) {
   if (!['ko', 'en'].includes(language)) throw new Error('Unsupported help language');
   const en = language === 'en', dashboard = '/?lang=' + language;
@@ -32,6 +37,7 @@ export function renderHelp(language, content = helpContent[language]) {
 <title>AX Commons | ${escapeHtml(content.title)}</title>
 <link rel="alternate" hreflang="ko" href="/help/"><link rel="alternate" hreflang="en" href="/help/en.html">
 <link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/help/style.css">
+<script src="/theme.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#content">${skip}</a>
@@ -46,6 +52,7 @@ export function renderHelp(language, content = helpContent[language]) {
 <a href="/help/" lang="ko" hreflang="ko"${!en ? ' aria-current="true"' : ''}>한국어</a>
 <a href="/help/en.html" lang="en" hreflang="en"${en ? ' aria-current="true"' : ''}>English</a>
 </nav>
+${themeSwitch(en)}
 </header>
 <main id="content" class="help-main">
 <header class="help-intro"><p class="eyebrow">AX COMMONS / ${en ? 'USER GUIDE' : '사용 안내'}</p><h1>${escapeHtml(content.title)}</h1><p class="lead">${escapeHtml(content.description)}</p><p>${escapeHtml(content.intro)}</p></header>
