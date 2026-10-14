@@ -1,0 +1,60 @@
+# Install guide (non-developers)
+
+This guide installs the AX Commons extension in Claude Desktop. It takes about five minutes. No programming knowledge is needed.
+
+## What you are installing
+
+The AX Commons extension is a small program that runs only on your computer. It keeps a local log (a single file called the ledger) of:
+
+- the one piece of work you want to change with AI (your intent),
+- task records: the type of task, whether a person checked the result, whether you reused it, and optionally how long it took,
+- problem reports: what went wrong and how you corrected it,
+- your consent items.
+
+**Your conversations are never recorded.** The extension cannot accept free text, only short tags and fixed categories. This version sends nothing anywhere.
+
+## Step 1: install the extension in Claude Desktop
+
+1. Download the `ax-commons.mcpb` file you received from your program operator (or build it yourself with `npm run pack` in `packages/mcp-server`, which produces `mcp-server.mcpb`).
+2. Open Claude Desktop.
+3. Either drag the `.mcpb` file onto the Claude Desktop window, or go to **Settings > Extensions**, choose **Install from file**, and pick the `.mcpb` file.
+4. Confirm the install dialog. Done. No other software is needed; Claude Desktop brings its own Node.js runtime (Node 22.5 or newer is required).
+
+## Step 2: what you are agreeing to
+
+At install, the extension shows its consent items. They mean:
+
+- **Aggregate measurement (program terms)**: counting tasks by type, review, and reuse is part of the program you joined. In this version the counts stay on your device; a later version sends only counts, never text, and only after the program tells you. Every send is listed in the extension's transmission history.
+- **Contribution sharing (separate opt-in, not yet active)**: sharing a prompt, skill, or case with the commons is your choice, item by item, with a preview, a scope, and a time limit. It arrives in a later version. Saying no changes nothing about the support you receive.
+
+You can ask the AI at any time: "show my ax-commons consent status" to see these items and the (empty) transmission history.
+
+## Step 3: use it
+
+Ask Claude to do a task, for example a summary. If you use one of the AX Commons skills, it ends by logging the task through the extension. Nothing else changes about how you use the AI.
+
+## Your ledger: where it is, how to export, how to delete
+
+The ledger is one file on your computer:
+
+- macOS: `~/Library/Application Support/ax-commons/ledger.db`
+- Windows: `%APPDATA%\ax-commons\ledger.db`
+- Linux: `~/.local/share/ax-commons/ledger.db`
+
+**To delete everything**, delete that file (on macOS: in Finder, choose Go > Go to Folder and paste the path; delete `ledger.db`). That is the whole delete operation; nothing is stored elsewhere. Removing the extension from Claude Desktop stops further logging.
+
+**To export a readable copy** (JSON, opens in any text editor), open Terminal (macOS: Applications > Utilities > Terminal) and run:
+
+```sh
+node "/path/to/extension/dist/cli.mjs" export --out ~/Desktop/ax-commons-export.json
+```
+
+Replace `/path/to/extension` with the extension's install folder (Claude Desktop shows it under Settings > Extensions; the file is also bundled in the `.mcpb`). The same folder's `delete` command removes the ledger: `node /path/to/extension/dist/cli.mjs delete`.
+
+## If you use ChatGPT instead of Claude
+
+ChatGPT does not load this desktop extension. The AX Commons skills still work: paste the skill text (from `commons/skills/`) into your chat or saved instructions and follow it as plain instructions; the logging step at the end is skipped automatically when the extension is not present. A web form for contributions arrives in a later phase (P2), so ChatGPT users can contribute with the same preview and approval steps.
+
+## Problems
+
+Report problems at https://github.com/halla-ai/ax-commons/issues.

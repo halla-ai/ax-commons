@@ -11,12 +11,12 @@ Open contribution loop for public AI-adoption programs. Design spec: `docs/specs
 
 ## Build and test
 
-The repo uses npm workspaces. Once P1 lands the code, run at the repo root:
+The repo uses npm workspaces. Run at the repo root:
 
-- `npm test`: unit tests, including the ledger scan that proves no conversation text is stored or sent.
-- `npm run build`: build all workspaces.
-
-These commands become available in P1; P0 is docs/metadata only, so there is nothing to build yet.
+- `npm test`: SKILL.md schema validation (AC4, via `scripts/validate-skill.mjs`) plus the mcp-server unit tests, including the ledger scan that proves no conversation text is stored or sent (AC2) and the export/delete tests (AC3). Requires Node >= 22.5 (the ledger uses `node:sqlite`).
+- `npm run build`: type-checks and bundles all workspaces (esbuild; the MCP server and CLI become self-contained files in `packages/mcp-server/dist/`).
+- `npm run validate:skills`: validate all `commons/skills/**/SKILL.md` against `commons/schemas/skill.schema.json`.
+- `npm run pack` (in `packages/mcp-server`): build and pack the `.mcpb` desktop extension via the `mcpb` CLI on npx.
 
 ## Privacy invariants
 
