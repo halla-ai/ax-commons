@@ -22,7 +22,7 @@ Human installation, task logging, contribution exercises and pilot evaluation ar
 
 ## Revocation and retention
 
-- Revocation deletes the current private snapshot file; previously published anonymous releases remain unchanged to prevent deletion differencing.
+- Revocation removes the source snapshot from the shared monthly record and retains a private withdrawal tombstone to block delayed uploads; previously published anonymous releases remain unchanged to prevent deletion differencing.
 - GitHub retains earlier file contents in private commit history. Revocation does not erase private historical versions or backups. The operator must disclose this retention and define a history/backup retirement policy before collecting real-user metrics. Do not promise physical erasure from a current-file deletion.
 - The private storage repository contains structured counts and transport-derived source keys, never conversation text or personal identity mappings. Approved contribution consent state uses a separate restricted namespace.
 

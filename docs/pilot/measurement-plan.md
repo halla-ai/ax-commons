@@ -38,5 +38,5 @@ Status: definitions prepared; no observed pilot data.
 - 5건 미만 건수와 비율은 비공개 처리합니다. 뺄셈으로 숨긴 셀을 알 수 있는 보완 건수·비율도 숨깁니다. 이진 결과 비율은 분자와 그 보완 건수가 모두 5 이상일 때만 보고합니다.
 - Do not publish overlapping totals, app/task cross-tabs, successive snapshots, or exact timing summaries that reconstruct suppressed cells. If this cannot be checked, suppress the affected table. A small pilot may therefore yield a fully suppressed external report; it still yields local operational evidence.
 - 겹치는 합계, 앱·작업 교차표, 연속 스냅샷, 정확한 시간 요약으로 숨긴 셀을 복원하지 못하게 합니다. 확인할 수 없으면 해당 표 전체를 비공개 처리합니다. 소규모 파일럿의 외부 보고가 전부 비공개 처리돼도 로컬 운영 근거는 남습니다.
-- P3 transmission and hosted dashboards remain outside P4 delivery. Do not send local measurements through messaging, repository issues or a web form to replace the unimplemented receiver.
-- P3 전송·대시보드는 P4 산출 범위 밖입니다. 미구현 수신기를 대신해 메시지·저장소 이슈·웹 폼으로 로컬 측정값을 보내지 않습니다.
+- P3 transmission and hosted dashboards remain outside P4 delivery. Do not send raw local measurements through messaging, repository issues or a contribution form. Use only the released, explicitly approved aggregate synchronization flow for metrics.
+- P3 전송·대시보드는 P4 산출 범위 밖입니다. 메시지·저장소 이슈·기여 폼으로 로컬 원시 측정값을 보내지 않습니다. 지표는 배포된 집계 동기화 흐름에서 명시적 승인을 받은 뒤에만 전송합니다.

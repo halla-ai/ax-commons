@@ -27,16 +27,16 @@ Contributions missing any of these are returned for completion.
 
 ## Personal data rules
 
-Contributions must not contain personal data. Phone numbers, email addresses, national ID numbers, and card numbers are blocked automatically in CI (planned; the checks land in P2), and the pull request fails. Until the CI exists, reviewers enforce the same patterns manually. Beyond those patterns, do not include names, addresses, account numbers, or anything that identifies a person. If real data is needed to explain a case, replace it with placeholders.
+Contributions must not contain personal data. Phone numbers, email addresses, national ID numbers, and card numbers are blocked by the [Contribution safety workflow](.github/workflows/commons-checks.yml) for changed contribution files, and the check fails. Reviewers also inspect context the pattern scanner cannot detect. Beyond those patterns, do not include names, addresses, account numbers, or anything that identifies a person. If real data is needed to explain a case, replace it with placeholders.
 
 ## Consent terms
 
 Sharing is a contribution, never a condition:
 
 - Contributing is **opt-in**. Nothing is shared unless you preview and approve it. Before you approve a `public` contribution, the preview in the MCP server or web form tells you that the contribution is irrevocable once public (the content license, CC BY 4.0, cannot be recalled).
-- Each contribution is **scoped** by your choice: `public` (visible to everyone) or `reviewers-only` (visible only to the review team). `reviewers-only` contributions go to a private review intake that is not this public repository; that intake is designed in P2 (issue #4), and until it exists only the `public` scope is accepted. Contributions submitted as pull requests to this public repository are public by nature in any case.
+- Each contribution is **scoped** by your choice: `public` (visible to everyone) or `reviewers-only` (visible only to the review team). `reviewers-only` contributions go to a private review intake that is not this public repository; that intake is unavailable in the current release, so only the `public` scope is accepted. Contributions submitted as pull requests to this public repository are public by nature in any case.
 - Each contribution is **time-limited**: you choose the sharing period at approval time.
-- Contributions can be **withdrawn**. You can withdraw a contribution at any time by opening a withdrawal request in this repository (an issue titled `withdraw: <contribution-id>`) or, once it exists, with the `revoke` tool in the MCP server (planned, lands in P2). Withdrawal removes the item from repository-hosted content and ends future use of it by the project. It does not recall copies already published: CC BY 4.0 is irrevocable, so anything already published stays licensed for whoever already has a copy, including verbatim copies, not only derived works. Git history is not rewritten on withdrawal, except for PII or legal takedown.
+- Contributions can be **withdrawn**. You can withdraw a contribution at any time by opening a withdrawal request in this repository (an issue titled `withdraw: <contribution-id>`) or with the released `revoke` tool in the MCP server. An unmerged submission is withdrawn by closing its PR and removing its branch. Already merged content needs a maintainer-reviewed removal PR; withdrawal remains pending until repository readback confirms removal. See the [withdrawal procedure](docs/handover/mirroring-withdrawal.md). It does not recall copies already published: CC BY 4.0 is irrevocable, so anything already published stays licensed for whoever already has a copy, including verbatim copies, not only derived works. Git history is not rewritten on withdrawal, except for PII or legal takedown.
 - **Declining to share has no effect on program support.** Whether or not you contribute, you receive the same program services and assistance.
 
 ## Recognition
@@ -49,4 +49,4 @@ By submitting a contribution you license it under the license of the directory i
 
 ## Review
 
-All contributions go through the review process in [REVIEW.md](REVIEW.md): automated CI checks (planned, land in P2), then four review passes (bugs, security, privacy, spec conformance) with a domain reviewer assigned via CODEOWNERS (also planned for P2; until then a maintainer assigns reviewers).
+All contributions go through the review process in [REVIEW.md](REVIEW.md): automated CI checks, then four review passes (bugs, security, privacy, spec conformance). The root [CODEOWNERS](CODEOWNERS) assigns an interim reviewer; the operator appoints domain reviewers before adoption.
