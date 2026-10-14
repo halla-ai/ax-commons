@@ -1,0 +1,41 @@
+{
+  "manifest_version": "0.3",
+  "name": "ax-commons",
+  "display_name": "AX Commons",
+  "version": "0.1.0",
+  "description": "Local ledger for the ax-commons contribution loop: declare one intent, log AI tasks, report issues, and review consent. Everything stays on your device; nothing is transmitted.",
+  "long_description": "AX Commons is an open contribution loop for public AI-adoption programs. This extension runs entirely on your device. It records your declared intent, task tags (type, human review, reuse), issue reports, and consent items in a single local SQLite ledger. Conversation text is never collected: the tools only accept short structured tags and fixed categories. This version transmits nothing; the ledger can be exported to a readable JSON file or deleted at any time. Minimal aggregate measurement is part of the program terms and starts only with a later version; sharing contributions is a separate opt-in.",
+  "author": {
+    "name": "Cheju Halla University ax-commons contributors",
+    "url": "https://github.com/halla-ai/ax-commons"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/halla-ai/ax-commons.git"
+  },
+  "homepage": "https://github.com/halla-ai/ax-commons",
+  "documentation": "https://github.com/halla-ai/ax-commons/blob/main/docs/install.md",
+  "support": "https://github.com/halla-ai/ax-commons/issues",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/server.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/server.mjs"]
+    }
+  },
+  "tools": [
+    { "name": "declare_intent", "description": "Record the one piece of work the user wants to change with AI, and why." },
+    { "name": "log_task", "description": "Record a completed AI task: type tag, human review, reuse, optional minutes." },
+    { "name": "report_issue", "description": "Record a wrong or unhelpful AI result: error type and correction type." },
+    { "name": "consent_status", "description": "Show consent items, their scope and period, and the transmission history." }
+  ],
+  "keywords": ["ai-adoption", "measurement", "privacy", "contribution"],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=22.5.0"
+    }
+  }
+}
