@@ -57,15 +57,16 @@ a:hover{color:var(--accent-hover)}
 .site-nav a{padding:20px 0 18px;text-decoration:none;color:var(--muted);border-bottom:2px solid transparent}
 .site-nav a:hover{color:var(--ink)}
 .site-nav a[aria-current]{color:var(--ink);border-bottom-color:var(--accent);font-weight:620}
-.language-switch{margin-left:auto;display:flex;gap:2px;font-size:13px}
-.language-switch a{padding:6px 12px;text-decoration:none;color:var(--muted);border-radius:var(--radius)}
-.language-switch a[aria-current]{background:var(--accent-soft);color:var(--ink);font-weight:620}
-.theme-switch{margin-left:auto;display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:var(--radius);font-size:12px}
-.language-switch+.theme-switch{margin-left:-12px}
+.language-switch,.theme-switch button{display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+.language-switch{margin-left:auto;width:36px;height:36px;box-sizing:border-box;border:1px solid var(--line);border-radius:var(--radius)}
+.language-switch:hover{color:var(--ink);background:var(--sunk)}
+.theme-switch{margin-left:auto;display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:var(--radius)}
+.language-switch+.theme-switch{margin-left:-18px}
 .theme-switch[hidden]{display:none}
-.theme-switch button{background:transparent;color:var(--muted);border:0;border-radius:4px;padding:4px 10px;margin:0;font-weight:500}
+.theme-switch button{background:transparent;border:0;border-radius:4px;padding:6px 8px;margin:0}
 .theme-switch button:hover{background:var(--sunk);color:var(--ink)}
-.theme-switch button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);font-weight:620}
+.theme-switch button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink)}
+.language-switch svg,.theme-switch svg{display:block}
 .skip-link{position:fixed;top:8px;left:16px;transform:translateY(-200%);z-index:2;background:var(--surface);color:var(--ink);padding:12px;border-radius:var(--radius)}
 .skip-link:focus{transform:none}
 
@@ -121,10 +122,9 @@ footer nav a{display:inline-block;padding:8px 0}
 @media (max-width:640px){
   main{grid-template-columns:1fr min(var(--measure),100% - 32px) 1fr}
   .site-header{padding:10px 16px 0;gap:0 16px}
+  .language-switch+.theme-switch{margin-left:-8px}
   .site-nav{order:3;width:100%;gap:20px}
   .site-nav a{padding:12px 0 10px}
-  .language-switch a{padding:8px 10px}
-  .language-switch+.theme-switch{order:4;margin:0 0 10px}
   h1{font-size:34px}
   .lead{font-size:1.05rem}
   .query{padding:18px}

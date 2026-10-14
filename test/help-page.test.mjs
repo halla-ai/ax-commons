@@ -22,8 +22,8 @@ test('both static help routes are complete and navigable without scripts', () =>
     assert.equal(content.faq.items.length, 8);
     assert.match(html, new RegExp('<html lang="' + language + '">'));
     assert.ok(html.includes('href="/?lang=' + language + '"'));
-    assert.ok(html.includes('href="/help/" lang="ko"'));
-    assert.ok(html.includes('href="/help/en.html" lang="en"'));
+    // The language icon links to the other language; both routes stay reachable without scripts.
+    assert.ok(html.includes(language === 'ko' ? 'href="/help/en.html" lang="en"' : 'href="/help/" lang="ko"'));
     for (const id of ['quick-start', ...ids, 'faq']) {
       assert.ok(html.includes('href="#' + id + '"'));
       assert.ok(html.includes('id="' + id + '"'));

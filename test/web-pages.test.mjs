@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {renderHelp} from '../scripts/render-help.mjs';
+import {icons} from '../web/icons.mjs';
 
 const pages = {
   dashboard: fs.readFileSync('packages/dashboard/public/index.html', 'utf8'),
@@ -22,5 +23,15 @@ test('every static page loads the theme script once and ships a hidden three-way
     assert.equal(html.split('<script src="/theme.js"></script>').length - 1, 1, name);
     assert.match(html, /<div class="theme-switch" role="group" aria-label="[^"]+" (?:data-label="theme" )?hidden>/, name);
     for (const choice of ['system', 'light', 'dark']) assert.ok(html.includes('data-theme-choice="' + choice + '"'), name + ' ' + choice);
+  }
+});
+
+test('header controls use the shared icon markup with accessible names', () => {
+  for (const [name, html] of Object.entries(pages)) {
+    for (const choice of ['system', 'light', 'dark']) {
+      assert.match(html, new RegExp('data-theme-choice="' + choice + '"[^>]* aria-label="[^"]+" title="[^"]+"'), name + ' ' + choice);
+      assert.ok(html.includes(icons[choice]), name + ' ' + choice + ' icon');
+    }
+    if (name !== 'contribute') assert.match(html, new RegExp('<a class="language-switch" href="[^"]+" lang="(?:ko|en)" hreflang="(?:ko|en)"[^>]* aria-label="[^"]+" title="[^"]+">' + icons.language.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '</a>'), name);
   }
 });

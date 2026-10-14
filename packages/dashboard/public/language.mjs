@@ -3,7 +3,7 @@ export function languageFrom(search) {
 }
 export const messages = {
   ko: {
-    title: 'AX Commons | 집계 현황', navigation: '주 메뉴', language: '언어 선택',
+    title: 'AX Commons | 집계 현황', navigation: '주 메뉴', switchLanguage: 'English',
     theme: '화면 모드', themeSystem: '시스템', themeLight: '라이트', themeDark: '다크',
     dashboard: '집계 현황', help: '설치와 사용 안내', contribute: '기여 자료 공유',
     heading: 'AI 활용 기록, 공유 가능한 만큼만.',
@@ -23,7 +23,7 @@ export const messages = {
     tasks: {'document-summary':'문서 요약', translation:'번역', writing:'글쓰기', coding:'코딩', data:'데이터', other:'기타'},
   },
   en: {
-    title: 'AX Commons | Activity dashboard', navigation: 'Main navigation', language: 'Choose language',
+    title: 'AX Commons | Activity dashboard', navigation: 'Main navigation', switchLanguage: '한국어',
     theme: 'Color theme', themeSystem: 'System', themeLight: 'Light', themeDark: 'Dark',
     dashboard: 'Dashboard', help: 'Installation and help', contribute: 'Contribute',
     heading: 'AI activity, shared with care.',
