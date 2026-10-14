@@ -17,10 +17,10 @@
     "build": "tsc --noEmit && node scripts/build.mjs",
     "test": "node --test test/*.test.ts",
     "start": "node dist/server.mjs",
-    "pack": "npm run build && npx --yes @anthropic-ai/mcpb pack"
+    "pack": "npm run build && npx --yes @anthropic-ai/mcpb pack . ax-commons.mcpb"
   },
   "engines": {
-    "node": ">=22.5.0"
+    "node": ">=22.13.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",

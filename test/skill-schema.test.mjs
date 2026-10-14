@@ -48,7 +48,7 @@ test("AC4: both general skills pass schema validation", () => {
 
 test("AC4: the validator CLI exits 0 on commons/skills", () => {
   const out = execFileSync(process.execPath, [VALIDATOR, path.join(REPO_ROOT, "commons", "skills")], { encoding: "utf8" });
-  assert.match(out, /2\/2 skill file\(s\) valid/);
+  assert.match(out, /^(\d+)\/\1 skill file\(s\) valid$/m);
 });
 
 test("AC4: a valid fixture passes", () => {

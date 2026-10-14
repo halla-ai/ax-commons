@@ -63,7 +63,7 @@ const MIGRATIONS: readonly string[][] = [
       detail TEXT
     )`,
     `INSERT INTO consent_records (recorded_at, item, kind, granted, scope, period, detail)
-     VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), '${PROGRAM_TERMS_ITEM}', 'program-terms', 1, 'program', NULL, '${PROGRAM_TERMS_DETAIL}')`,
+     VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), '${PROGRAM_TERMS_ITEM}', 'program-terms', 1, 'program', NULL, '${PROGRAM_TERMS_DETAIL.replaceAll("'", "''")}')`,
   ],
 ];
 
@@ -98,11 +98,19 @@ export class Ledger {
     const row = this.db.prepare("PRAGMA user_version").get() as { user_version: number };
     let version = row.user_version;
     while (version < MIGRATIONS.length) {
-      for (const statement of MIGRATIONS[version] ?? []) {
-        this.db.exec(statement);
+      // One transaction per step, so a failed migration leaves no half-built schema.
+      this.db.exec("BEGIN");
+      try {
+        for (const statement of MIGRATIONS[version] ?? []) {
+          this.db.exec(statement);
+        }
+        this.db.exec(`PRAGMA user_version = ${version + 1}`);
+        this.db.exec("COMMIT");
+      } catch (error) {
+        this.db.exec("ROLLBACK");
+        throw error;
       }
       version += 1;
-      this.db.exec(`PRAGMA user_version = ${version}`);
     }
   }
 

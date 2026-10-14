@@ -27,6 +27,19 @@ test("declare_intent records valid input", () => {
   });
 });
 
+// AC2 boundary, stated explicitly: declare_intent labels are user-written and
+// stored as given up to the cap. The no-conversation-text guarantee covers the
+// enum/boolean/integer fields and the no-echo of rejected values, not this label.
+test("declare_intent stores a label up to the cap verbatim", () => {
+  withHandlers((handlers, ledgerPath) => {
+    const label = "y".repeat(MAX_SHORT_TEXT);
+    handlers.declare_intent({ work_summary: label, reason: label });
+    const rows = readAllRows(ledgerPath);
+    assert.equal(rows.intents[0]?.work_summary, label);
+    assert.equal(rows.intents[0]?.reason, label);
+  });
+});
+
 test("log_task records valid input for every task type", () => {
   withHandlers((handlers, ledgerPath) => {
     for (const taskType of TASK_TYPES) {

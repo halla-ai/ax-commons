@@ -4,7 +4,7 @@
   "display_name": "AX Commons",
   "version": "0.1.0",
   "description": "Local ledger for the ax-commons contribution loop: declare one intent, log AI tasks, report issues, and review consent. Everything stays on your device; nothing is transmitted.",
-  "long_description": "AX Commons is an open contribution loop for public AI-adoption programs. This extension runs entirely on your device. It records your declared intent, task tags (type, human review, reuse), issue reports, and consent items in a single local SQLite ledger. Conversation text is never collected: the tools only accept short structured tags and fixed categories. This version transmits nothing; the ledger can be exported to a readable JSON file or deleted at any time. Minimal aggregate measurement is part of the program terms and starts only with a later version; sharing contributions is a separate opt-in.",
+  "long_description": "AX Commons is an open contribution loop for public AI-adoption programs. This extension runs entirely on your device. It records your declared intent, task tags (type, human review, reuse), issue reports, and consent items in a single local SQLite ledger. It is built not to collect conversation text: your intent is a short label you write yourself (max 200 characters, never pasted conversation text), and every other tool accepts only fixed categories, yes/no flags and an optional number of minutes. This version transmits nothing; the ledger can be exported to a readable JSON file or deleted at any time. Minimal aggregate measurement is part of the program terms and starts only with a later version; sharing contributions is a separate opt-in.",
   "author": {
     "name": "Cheju Halla University ax-commons contributors",
     "url": "https://github.com/halla-ai/ax-commons"
@@ -35,7 +35,7 @@
   "compatibility": {
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {
-      "node": ">=22.5.0"
+      "node": ">=22.13.0"
     }
   }
 }
