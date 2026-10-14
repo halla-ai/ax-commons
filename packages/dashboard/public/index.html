@@ -1,3 +1,48 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AX Commons | 집계 현황</title><link rel="stylesheet" href="style.css"></head>
-<body><main><p class="eyebrow">AX COMMONS / OPEN CONTRIBUTION LOOP</p><h1>AI 활용 기록,<br>공유 가능한 만큼만.</h1><p>Aggregate activity and skill reuse, with small cells protected.</p><section aria-labelledby="privacy"><h2 id="privacy">공개 기준 / Publication rules</h2><p>대화 내용과 기기 ID를 공개하지 않습니다. 5회 미만인 항목은 제외하고, 마감된 월의 서로 겹치지 않는 항목만 공개합니다. 합계와 기간 비교 필터는 제공하지 않습니다.</p><p>Counts below 5 are suppressed. Published months are frozen; activity counts do not establish the number of individual participants or impact.</p></section><form id="period-form"><label for="period">마감 월 / Closed month</label><input id="period" type="month" required><button>집계 보기 / View</button></form><p id="status" role="status">실측 자료를 불러오기 전입니다. / No measured results loaded.</p><section id="results" aria-label="집계와 재사용 인정 / Aggregates and reuse recognition"></section><noscript>JavaScript가 필요합니다. 집계 API: /v1/public?period=YYYY-MM</noscript><footer><nav><a href="/contribute/">기여 자료 공유 / Contribute</a> · <a href="/contributors.md">기여자 목록 / Contributors</a></nav>재사용 횟수는 기여 인정용 활동 지표입니다. 보상이나 성과 평가를 의미하지 않습니다.<br>Reuse is an activity indicator for recognition, not a reward or outcome measure.</footer></main><script type="module" src="app.mjs"></script></body></html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="AX Commons 공개 집계와 설치·사용 안내 / Public activity dashboard and help.">
+  <title>AX Commons | 집계 현황</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#content" data-i18n="skip">본문으로 이동</a>
+  <header class="site-header">
+    <a class="brand" href="/" data-dashboard-link>AX COMMONS</a>
+    <nav aria-label="주 메뉴" data-label="navigation" class="site-nav">
+      <a href="/" aria-current="page" data-dashboard-link data-i18n="dashboard">집계 현황</a>
+      <a href="/help/" data-help-link data-i18n="help">설치와 사용 안내</a>
+      <a href="/contribute/" data-i18n="contribute">기여 자료 공유</a>
+    </nav>
+    <nav class="language-switch" aria-label="언어 선택" data-label="language">
+      <a href="/?lang=ko" lang="ko" hreflang="ko" data-language="ko" aria-current="true">한국어</a>
+      <a href="/?lang=en" lang="en" hreflang="en" data-language="en">English</a>
+    </nav>
+  </header>
+  <main id="content">
+    <p class="eyebrow">AX COMMONS / OPEN CONTRIBUTION LOOP</p>
+    <h1 data-i18n="heading">AI 활용 기록, 공유 가능한 만큼만.</h1>
+    <p class="lead" data-i18n="intro">작업과 스킬 재사용을 집계하되, 소규모 항목은 보호합니다.</p>
+    <section aria-labelledby="privacy">
+      <h2 id="privacy" data-i18n="privacy">공개 기준</h2>
+      <p data-i18n="rules">대화 내용과 기기 ID를 공개하지 않습니다. 5회 미만인 항목은 제외하고, 마감된 월의 서로 겹치지 않는 항목만 공개합니다. 합계와 기간 비교 필터는 제공하지 않습니다.</p>
+      <p data-i18n="limits">공개된 월은 고정됩니다. 활동 건수는 개별 참가자 수나 활용 성과를 뜻하지 않습니다.</p>
+    </section>
+    <form id="period-form">
+      <label for="period" data-i18n="month">마감 월</label>
+      <input id="period" type="month" required>
+      <button data-i18n="view">집계 보기</button>
+    </form>
+    <p id="status" role="status" data-i18n="ready">실측 자료를 불러오기 전입니다.</p>
+    <section id="results" aria-label="집계와 재사용 인정" data-label="results"></section>
+    <noscript><p>집계 조회에는 JavaScript가 필요합니다. <a href="/help/">한국어 안내</a> · <a href="/help/en.html" lang="en">English help</a>. Aggregate API: /v1/public?period=YYYY-MM</p></noscript>
+    <footer>
+      <nav><a href="/help/" data-help-link data-i18n="help">설치와 사용 안내</a> · <a href="/contributors.md" data-i18n="contributors">기여자 목록</a></nav>
+      <p data-i18n="recognition">재사용 횟수는 기여 인정용 활동 지표입니다. 보상이나 성과 평가를 의미하지 않습니다.</p>
+    </footer>
+  </main>
+  <script type="module" src="/app.mjs"></script>
+</body>
+</html>

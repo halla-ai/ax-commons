@@ -1,0 +1,43 @@
+export function languageFrom(search) {
+  return new URLSearchParams(search).get('lang') === 'en' ? 'en' : 'ko';
+}
+export const messages = {
+  ko: {
+    title: 'AX Commons | 집계 현황', navigation: '주 메뉴', language: '언어 선택',
+    dashboard: '집계 현황', help: '설치와 사용 안내', contribute: '기여 자료 공유',
+    heading: 'AI 활용 기록, 공유 가능한 만큼만.',
+    intro: '작업과 스킬 재사용을 집계하되, 소규모 항목은 보호합니다.',
+    privacy: '공개 기준',
+    rules: '대화 내용과 기기 ID를 공개하지 않습니다. 5회 미만인 항목은 제외하고, 마감된 월의 서로 겹치지 않는 항목만 공개합니다. 합계와 기간 비교 필터는 제공하지 않습니다.',
+    limits: '공개된 월은 고정됩니다. 활동 건수는 개별 참가자 수나 활용 성과를 뜻하지 않습니다.',
+    month: '마감 월', view: '집계 보기', ready: '실측 자료를 불러오기 전입니다.',
+    loading: '집계를 불러오는 중입니다.', closed: '아직 마감되지 않은 월입니다.',
+    unavailable: '집계를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.',
+    empty: '공개 기준을 충족하는 자료가 없습니다. 활동이 0건이라는 뜻은 아닙니다.',
+    loaded: '마감 집계', results: '집계와 재사용 인정', program: '프로그램',
+    caption: '활동과 재사용 인정', columns: ['업무', '검토', '재사용', '스킬', '횟수'],
+    yes: '예', no: '아니요', contributors: '기여자 목록',
+    recognition: '재사용 횟수는 기여 인정용 활동 지표입니다. 보상이나 성과 평가를 의미하지 않습니다.',
+    skip: '본문으로 이동',
+    tasks: {'document-summary':'문서 요약', translation:'번역', writing:'글쓰기', coding:'코딩', data:'데이터', other:'기타'},
+  },
+  en: {
+    title: 'AX Commons | Activity dashboard', navigation: 'Main navigation', language: 'Choose language',
+    dashboard: 'Dashboard', help: 'Installation and help', contribute: 'Contribute',
+    heading: 'AI activity, shared with care.',
+    intro: 'Aggregate activity and skill reuse, with small cells protected.',
+    privacy: 'Publication rules',
+    rules: 'Conversation text and device IDs are never published. Counts below 5 are omitted. Only non-overlapping cells from closed months are published, without totals or period-comparison filters.',
+    limits: 'Published months are frozen. Activity counts do not establish the number of individual participants or impact.',
+    month: 'Closed month', view: 'View aggregates', ready: 'No measured results loaded.',
+    loading: 'Loading aggregates.', closed: 'This month is not closed yet.',
+    unavailable: 'Aggregates unavailable. Please try again later.',
+    empty: 'No cells meet the publication rules. This does not mean there was zero activity.',
+    loaded: 'Frozen monthly aggregates', results: 'Aggregates and reuse recognition', program: 'Program',
+    caption: 'Activity and reuse recognition', columns: ['Task', 'Reviewed', 'Reused', 'Skill', 'Count'],
+    yes: 'Yes', no: 'No', contributors: 'Contributors',
+    recognition: 'Reuse is an activity indicator for recognition, not a reward or outcome measure.',
+    skip: 'Skip to content',
+    tasks: {'document-summary':'Document summary', translation:'Translation', writing:'Writing', coding:'Coding', data:'Data', other:'Other'},
+  },
+};

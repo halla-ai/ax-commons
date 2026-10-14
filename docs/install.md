@@ -1,5 +1,7 @@
 # Install and use AX Commons
 
+[한국어 웹 안내](https://ax-commons.halla.ai/help/) · [English web guide](https://ax-commons.halla.ai/help/en.html).
+
 Version 0.2 adds optional contribution sharing and approved aggregate synchronization. Activity logging stays on your device. Configuring access codes never sends data automatically. Actual native installation and the five-minute installation target have not been measured; the owner will test after deployment.
 
 ## Claude Desktop extension

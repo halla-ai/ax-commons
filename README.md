@@ -10,6 +10,7 @@ Using an AI tool should be enough to measure progress and to contribute back. ax
 
 Version 0.2 implements the local MCP logger, explicit public contribution approval and withdrawal, suppressed monthly metrics, and a bilingual web form/dashboard. Real-user installation, pilot measurements, partner approval and outside-reader review remain deferred. See the [design](docs/specs/2026-10-14-ax-commons-design.md), [installation guide](docs/install.md), and [operator handover](docs/handover/operator-guide.md).
 
+- [한국어 사용 안내](https://ax-commons.halla.ai/help/) · [English help](https://ax-commons.halla.ai/help/en.html).
 - [Dashboard](https://ax-commons.halla.ai/) and [contribution form](https://ax-commons.halla.ai/contribute/).
 - [Desktop extension and CLI release](https://github.com/halla-ai/ax-commons/releases/latest).
 - [API](docs/api.md), [schema](docs/schema.md), [deployment](docs/deployment.md).

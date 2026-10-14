@@ -1,4 +1,5 @@
 import './generate-contributors.mjs';
+import {renderHelp} from './render-help.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 const out = 'web-dist';
@@ -13,3 +14,8 @@ for (const file of ['index.html', 'form.mjs', 'model.mjs', 'style.css']) {
 fs.copyFileSync('packages/contributions/core.mjs', path.join(out, 'contribute', 'core.mjs'));
 fs.copyFileSync('commons/CONTRIBUTORS.md', path.join(out, 'contributors.md'));
 fs.writeFileSync(path.join(out, 'release.json'), JSON.stringify({commit:process.env.AX_RELEASE_SHA || 'development', version:JSON.parse(fs.readFileSync('package.json','utf8')).version})+'\n');
+
+fs.mkdirSync(path.join(out, 'help'), {recursive:true});
+fs.writeFileSync(path.join(out, 'help', 'index.html'), renderHelp('ko'));
+fs.writeFileSync(path.join(out, 'help', 'en.html'), renderHelp('en'));
+fs.copyFileSync('web/help/style.css', path.join(out, 'help', 'style.css'));
