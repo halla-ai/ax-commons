@@ -23,3 +23,4 @@ jobs:
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           AX_METRICS_TOKEN: ${{ secrets.AX_METRICS_TOKEN }}
           AX_BUDGET_GUARD_STOP_AT: ${{ vars.AX_BUDGET_GUARD_STOP_AT }}
+          AX_BUDGET_MONTHLY_LIMIT_USD: ${{ vars.AX_BUDGET_MONTHLY_LIMIT_USD }}

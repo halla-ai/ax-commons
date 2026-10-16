@@ -35,6 +35,6 @@ Human installation, task logging, contribution exercises and pilot evaluation ar
 
 ## Independent hosting monitor
 
-- `budget-watch.yml` checks provider-reported billed usage every 15 minutes and pauses only the verified AX Commons project when nonzero billed usage is recorded. It also checks application quota warnings. Billing amounts and unrelated project data are not printed.
+- `budget-watch.yml` checks provider-reported billed usage every 15 minutes and pauses only the verified AX Commons project when its billed usage for the current UTC month exceeds `AX_BUDGET_MONTHLY_LIMIT_USD` (repository variable, default 1 USD). An invalid limit fails closed. The guard never unpauses; after reviewing the charges, the operator resumes the project manually. It also checks application quota warnings. Billing amounts and unrelated project data are not printed.
 - Monitoring credentials and project/team IDs are supplied through encrypted repository settings. A rotation deadline pauses the project before its monitoring credential needs renewal.
 - Provider data and scheduled jobs can be delayed. No recorded usage is not a guarantee of zero future charges; this is a best-effort control. No new paid database, integration or plan upgrade is used. A provider pause also stops HTTP withdrawal access; use the operator GitHub withdrawal procedure during a pause.
