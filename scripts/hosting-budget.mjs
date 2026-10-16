@@ -23,7 +23,7 @@ export async function checkHostingBudget({token,teamId,projectId,metricsToken,ap
     if(row.Tags.ProjectId!==projectId)continue;
     if(row.BilledCost===null||row.BilledCost===undefined||(typeof row.BilledCost==='string'&&!row.BilledCost.trim()))throw new Error('Billing measure unavailable');
     const value=Number(row.BilledCost);if(row.BillingCurrency!=='USD'||!Number.isFinite(value))throw new Error('Billing measure unavailable');
-    billed+=Math.max(0,value);matched++;
+    billed+=value;matched++;
   }
   const deadline=Number(guardStopAt);
   const stop=billed>limit+EPSILON||(Number.isFinite(deadline)&&current>=deadline);
